@@ -10,6 +10,9 @@ import {
 
 // --- BACKEND API CONFIGURATION ---
 const TARGET_EMAIL = "geoconsultant@gmail.com";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const SUPABASE_AUDIT_TABLE = import.meta.env.VITE_SUPABASE_AUDIT_TABLE || "financial_goal_audits";
 
 const fetchWithTimeout = async (url, options = {}, timeout = 60000) => {
   const controller = new AbortController();
@@ -406,6 +409,856 @@ const GeneralContactModal = ({ isOpen, onClose, title }) => {
 // --- CALCULATOR WIDGETS ---
 const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
 
+
+// --- ASK GEO AI AUDIT + RESPONSIBLE PLANNING ENGINE ---
+const toNumber = (value) => {
+  const parsed = Number(String(value ?? '').replace(/,/g, ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const sipFutureValue = (monthlyInvestment, annualReturn, years) => {
+  const monthlyReturn = annualReturn / 12 / 100;
+  const months = years * 12;
+  if (!monthlyInvestment || !months) return 0;
+  if (monthlyReturn === 0) return monthlyInvestment * months;
+  return monthlyInvestment * ((Math.pow(1 + monthlyReturn, months) - 1) / monthlyReturn);
+};
+
+const corpusFutureValue = (currentCorpus, annualReturn, years) => {
+  if (!currentCorpus || !years) return 0;
+  return currentCorpus * Math.pow(1 + annualReturn / 100, years);
+};
+
+const getTimelineMonths = (timeline) => {
+  if (timeline === '0–2 years') return 24;
+  if (timeline === '3–5 years') return 60;
+  if (timeline === '6–10 years') return 120;
+  return 240;
+};
+
+const getTimelineLabel = (timeline) => {
+  if (timeline === '0–2 years') return 'Short-term';
+  if (timeline === '3–5 years') return 'Medium-term';
+  return 'Long-term';
+};
+
+const monthlyNeededForGoal = (targetAmount, months, annualReturn = 9) => {
+  const amount = toNumber(targetAmount);
+  const monthlyReturn = annualReturn / 12 / 100;
+  if (!amount || !months) return 0;
+  if (monthlyReturn === 0) return amount / months;
+  return amount * monthlyReturn / (Math.pow(1 + monthlyReturn, months) - 1);
+};
+
+const getGoalReturnAssumption = (timeline) => {
+  if (timeline === '0–2 years') return 6;
+  if (timeline === '3–5 years') return 7;
+  if (timeline === '6–10 years') return 9;
+  return 10;
+};
+
+const analyseFinancialAudit = (form) => {
+  const age = toNumber(form.age);
+  const income = toNumber(form.monthlyIncome);
+  const expenses = toNumber(form.monthlyExpenses);
+  const savings = toNumber(form.monthlySavings);
+  const monthlyInvestmentCapacity = toNumber(form.monthlyInvestCapacity);
+  const emi = form.hasLoans === 'Yes' ? toNumber(form.monthlyEmi) : 0;
+  const lumpSum = toNumber(form.lumpSum);
+  const targetAmount = toNumber(form.targetAmount);
+
+  const savingsRate = income > 0 ? (savings / income) * 100 : 0;
+  const debtRatio = income > 0 ? (emi / income) * 100 : 0;
+  const investableSurplus = Math.max(monthlyInvestmentCapacity || (savings - emi), 0);
+
+  const emergencyMap = {
+    'No': { score15: 0, score20: 0, status: 'Weak' },
+    'Less than 3 months': { score15: 6, score20: 8, status: 'Weak' },
+    '3–6 months': { score15: 12, score20: 16, status: 'Moderate' },
+    '6+ months': { score15: 15, score20: 20, status: 'Strong' },
+  };
+
+  const incomeStabilityScore = {
+    'Very stable': 15,
+    'Stable': 12,
+    'Irregular': 7,
+    'Uncertain': 3,
+  }[form.incomeStability] ?? 7;
+
+  const ageScore = age <= 0 ? 5 : age < 30 ? 10 : age <= 45 ? 8 : age <= 55 ? 5 : 3;
+  const savingsScore15 = savingsRate >= 30 ? 15 : savingsRate >= 20 ? 12 : savingsRate >= 10 ? 8 : savingsRate > 0 ? 4 : 0;
+  const loanScore15 = form.hasLoans !== 'Yes' ? 15 : debtRatio <= 10 ? 12 : debtRatio <= 25 ? 7 : 3;
+  const horizonScore = {
+    '0–2 years': 4,
+    '3–5 years': 8,
+    '6–10 years': 12,
+    '10+ years': 15,
+  }[form.goalTimeline] ?? 8;
+  const reactionScore = {
+    'Panic and withdraw': 3,
+    'Wait but worry': 8,
+    'Stay invested': 12,
+    'Invest more': 15,
+  }[form.marketReaction] ?? 8;
+
+  const emergency = emergencyMap[form.emergencyFund] || emergencyMap['No'];
+  const riskScore = ageScore + incomeStabilityScore + savingsScore15 + emergency.score15 + loanScore15 + horizonScore + reactionScore;
+
+  const riskProfile =
+    riskScore <= 35 ? 'Conservative' :
+    riskScore <= 60 ? 'Moderate' :
+    riskScore <= 80 ? 'Balanced Growth' :
+    'Aggressive Growth';
+
+  const insuranceReadiness =
+    form.insuranceStatus === 'Both' ? 'Adequate' :
+    form.insuranceStatus === 'Health' || form.insuranceStatus === 'Life' ? 'Partial' :
+    'Missing';
+
+  const debtPressure = form.hasLoans !== 'Yes' ? 'Low' : debtRatio <= 15 ? 'Medium' : 'High';
+
+  const healthScoreBreakup = {
+    savingsDiscipline: savingsRate >= 30 ? 20 : savingsRate >= 20 ? 16 : savingsRate >= 10 ? 11 : savingsRate > 0 ? 6 : 0,
+    emergencyReadiness: emergency.score20,
+    debtPressure: form.hasLoans !== 'Yes' ? 15 : debtRatio <= 10 ? 12 : debtRatio <= 25 ? 7 : 3,
+    insuranceReadiness: form.insuranceStatus === 'Both' ? 15 : (form.insuranceStatus === 'Health' || form.insuranceStatus === 'Life') ? 8 : 2,
+    investmentReadiness: form.investedBefore === 'Never' ? 4 : form.knowledgeLevel === 'Advanced' ? 15 : form.knowledgeLevel === 'Intermediate' ? 12 : 8,
+    goalClarity: form.primaryGoal && targetAmount > 0 ? 15 : form.primaryGoal ? 9 : 4,
+  };
+
+  const financialHealthScore = Object.values(healthScoreBreakup).reduce((sum, score) => sum + score, 0);
+
+  let clientType = 'Beginner Wealth Builder';
+  if (emergency.status === 'Weak' || insuranceReadiness === 'Missing') clientType = 'Safety Starter';
+  if (debtPressure === 'High') clientType = 'Debt-First Planner';
+  if (form.primaryGoal && targetAmount > 0 && clientType !== 'Debt-First Planner') clientType = 'Goal-Focused Investor';
+  if ((riskProfile === 'Balanced Growth' || riskProfile === 'Aggressive Growth') && form.goalTimeline === '10+ years') clientType = 'Growth-Oriented Investor';
+
+  const goalReturn = getGoalReturnAssumption(form.goalTimeline);
+  const goalMonths = getTimelineMonths(form.goalTimeline);
+  const primaryGoalMonthly = monthlyNeededForGoal(targetAmount, goalMonths, goalReturn);
+
+  const goalRows = [];
+  if (form.primaryGoal) {
+    goalRows.push({
+      goal: form.primaryGoal,
+      target: targetAmount > 0 ? formatCurrency(targetAmount) : 'Needs target amount',
+      horizon: form.goalTimeline || 'Not defined',
+      monthly: targetAmount > 0 ? `${formatCurrency(primaryGoalMonthly)} approx.` : 'Advisor to define',
+      priority: 'High',
+      bucket: getTimelineLabel(form.goalTimeline),
+    });
+  }
+
+  const emergencyTarget = expenses * 6;
+  if (form.emergencyFund !== '6+ months' && emergencyTarget > 0) {
+    goalRows.unshift({
+      goal: 'Emergency fund',
+      target: formatCurrency(emergencyTarget),
+      horizon: '12 months',
+      monthly: `${formatCurrency(emergencyTarget / 12)} approx.`,
+      priority: 'Critical',
+      bucket: 'Short-term',
+    });
+  }
+
+  const projectionRows = [5, 10, 15, 20].map((years) => ({
+    years,
+    conservative: sipFutureValue(investableSurplus, 6, years) + corpusFutureValue(lumpSum, 6, years),
+    balanced: sipFutureValue(investableSurplus, 9, years) + corpusFutureValue(lumpSum, 9, years),
+    growth: sipFutureValue(investableSurplus, 12, years) + corpusFutureValue(lumpSum, 12, years),
+  }));
+
+  const allocationDirection = [];
+  if (emergency.status !== 'Strong') allocationDirection.push('Build or complete emergency fund before increasing market-linked exposure.');
+  if (debtPressure === 'High') allocationDirection.push('Reduce high EMI pressure before aggressive investing.');
+  if (insuranceReadiness !== 'Adequate') allocationDirection.push('Review health and life insurance protection.');
+  if (riskProfile === 'Conservative') allocationDirection.push('Prefer capital safety, fixed-income style buckets, and short-term goal protection.');
+  if (riskProfile === 'Moderate') allocationDirection.push('Use a balanced mix of safety, fixed income, and gradual equity mutual fund exposure.');
+  if (riskProfile === 'Balanced Growth' || riskProfile === 'Aggressive Growth') allocationDirection.push('Long-term wealth bucket may include higher equity mutual fund allocation after safety checks.');
+
+  return {
+    income,
+    expenses,
+    savings,
+    savingsRate,
+    investableSurplus,
+    emergencyStatus: emergency.status,
+    debtPressure,
+    insuranceReadiness,
+    riskScore,
+    riskProfile,
+    healthScoreBreakup,
+    financialHealthScore,
+    clientType,
+    goalRows,
+    projectionRows,
+    allocationDirection,
+    monthlyInvestmentCapacity: investableSurplus,
+  };
+};
+
+const AuditInput = ({ label, children }) => (
+  <div>
+    <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">{label}</label>
+    {children}
+  </div>
+);
+
+const inputClass = "w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white";
+const selectClass = inputClass;
+
+const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal }) => {
+  const [step, setStep] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    age: '',
+    occupation: '',
+    monthlyIncome: '',
+    dependents: 'No',
+    dependentsCount: '',
+    incomeStability: 'Stable',
+    monthlySavings: '',
+    monthlyExpenses: '',
+    emergencyFund: 'No',
+    hasLoans: 'No',
+    monthlyEmi: '',
+    insuranceStatus: 'Not sure',
+    investedBefore: 'Never',
+    monthlyInvestCapacity: '',
+    lumpSum: '',
+    marketReaction: 'Wait but worry',
+    knowledgeLevel: 'Beginner',
+    topGoals: [],
+    primaryGoal: '',
+    goalTimeline: '3–5 years',
+    targetAmount: '',
+    capitalPreference: 'Balanced growth',
+  });
+
+  const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+  const toggleGoal = (goal) => {
+    setForm((prev) => {
+      const exists = prev.topGoals.includes(goal);
+      const nextGoals = exists ? prev.topGoals.filter((item) => item !== goal) : [...prev.topGoals, goal];
+      return { ...prev, topGoals: nextGoals, primaryGoal: prev.primaryGoal || goal };
+    });
+  };
+
+  const result = analyseFinancialAudit(form);
+  const steps = [
+    'Tell us about yourself',
+    'Understand your money habits',
+    'Define your goals',
+    'Know your risk comfort',
+  ];
+
+  const goalOptions = ['Emergency fund', 'Home', 'Car', 'Child education', 'Retirement', 'Travel', 'Business', 'Wealth creation', 'Debt-free life'];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+    setIsSending(true);
+
+    const emailRows = [
+      { label: 'Financial Health Score', value: `${result.financialHealthScore}/100`, success: result.financialHealthScore >= 70 },
+      { label: 'Client Type', value: result.clientType },
+      { label: 'Risk Profile', value: result.riskProfile },
+      { label: 'Monthly Investable Surplus', value: formatCurrency(result.investableSurplus), success: result.investableSurplus > 0 },
+    ];
+
+    const html = getBeautifulEmailTemplate('AI Financial Goal Audit', {
+      name: form.name || 'Website Visitor',
+      phone: form.phone,
+      email: form.email,
+      message: `
+        Age: ${form.age || 'N/A'}<br/>
+        Occupation: ${form.occupation || 'N/A'}<br/>
+        Income: ${formatCurrency(result.income)}<br/>
+        Expenses: ${formatCurrency(result.expenses)}<br/>
+        Savings: ${formatCurrency(result.savings)}<br/>
+        Primary Goal: ${form.primaryGoal || 'N/A'}<br/>
+        Target Amount: ${form.targetAmount ? formatCurrency(toNumber(form.targetAmount)) : 'N/A'}<br/>
+        Risk Profile: ${result.riskProfile}<br/>
+        Financial Health Score: ${result.financialHealthScore}/100
+      `
+    }, emailRows);
+
+    try {
+      await sendEmailViaBackend(`Ask Geo AI Financial Audit - ${form.name || 'New Lead'}`, html);
+    } catch (error) {
+      console.warn('Audit lead email failed, but report was generated locally:', error);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const resetAudit = () => {
+    setSubmitted(false);
+    setStep(0);
+  };
+
+  if (submitted) {
+    return (
+      <div className={`text-left ${embedded ? '' : 'max-w-[1400px] mx-auto'}`}>
+        <FadeIn direction="up">
+          <div className="bg-white border border-zinc-200/70 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-zinc-200/50">
+            <div className="bg-zinc-950 text-white p-8 sm:p-10 lg:p-12 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-[280px] h-[280px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/25 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
+              <div className="relative z-10 max-w-4xl">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10 text-emerald-200 text-[10px] font-bold tracking-widest uppercase mb-6">
+                  <Bot className="w-4 h-4" /> AI Financial Discovery Report
+                </div>
+                <h2 className="text-3xl sm:text-5xl lg:text-6xl font-light tracking-tighter leading-[1.05] mb-5">
+                  {result.clientType}
+                </h2>
+                <p className="text-zinc-300 font-light text-base sm:text-lg leading-relaxed max-w-3xl">
+                  Your current profile suggests a <span className="text-emerald-300 font-medium">{result.riskProfile}</span> risk profile. The first priority is suitability: safety, emergency fund, debt pressure, and insurance readiness should be reviewed before any market-linked strategy is executed.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 sm:p-10 lg:p-12 space-y-10">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  ['Monthly Income', formatCurrency(result.income)],
+                  ['Monthly Expenses', formatCurrency(result.expenses)],
+                  ['Monthly Savings', formatCurrency(result.savings)],
+                  ['Savings Rate', `${result.savingsRate.toFixed(1)}%`],
+                  ['Investable Surplus', formatCurrency(result.investableSurplus)],
+                  ['Emergency Fund', result.emergencyStatus],
+                  ['Debt Pressure', result.debtPressure],
+                  ['Insurance Readiness', result.insuranceReadiness],
+                ].map(([label, value]) => (
+                  <div key={label} className="bg-zinc-50 border border-zinc-200 rounded-2xl p-5">
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 mb-2">{label}</p>
+                    <p className="text-xl font-light text-zinc-950">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid lg:grid-cols-12 gap-6">
+                <div className="lg:col-span-4 bg-emerald-50 border border-emerald-100 rounded-[2rem] p-6">
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-emerald-700 mb-3">Financial Health Score</p>
+                  <p className="text-6xl font-light tracking-tighter text-emerald-700 mb-4">{result.financialHealthScore}<span className="text-2xl text-emerald-500">/100</span></p>
+                  <div className="space-y-2 text-sm text-emerald-950 font-light">
+                    {Object.entries(result.healthScoreBreakup).map(([key, score]) => (
+                      <div key={key} className="flex justify-between gap-3 border-b border-emerald-100 pb-2 last:border-0">
+                        <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                        <span className="font-medium">{score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="lg:col-span-8 bg-white border border-zinc-200 rounded-[2rem] p-6">
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 mb-4">Risk Profile Logic</p>
+                  <div className="flex items-center justify-between gap-4 mb-5">
+                    <h3 className="text-2xl sm:text-3xl font-light text-zinc-950">{result.riskProfile}</h3>
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold tracking-widest uppercase text-zinc-400">Risk Score</p>
+                      <p className="text-2xl font-light text-emerald-600">{result.riskScore}/100</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-zinc-600 font-light leading-relaxed mb-5">
+                    This classification considers age, income stability, savings rate, emergency fund status, EMI burden, investment horizon, and reaction to temporary market fall. It is a suitability filter, not a product recommendation.
+                  </p>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {result.allocationDirection.map((item, index) => (
+                      <div key={index} className="flex gap-3 bg-zinc-50 border border-zinc-100 rounded-xl p-4 text-sm text-zinc-700 font-light">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5">
+                  <div>
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 mb-2">Goal Conversion</p>
+                    <h3 className="text-2xl sm:text-3xl font-light tracking-tight text-zinc-950">Clean goal map</h3>
+                  </div>
+                  <p className="text-xs text-zinc-500 font-light max-w-xl">Monthly amounts are approximate and based on broad return assumptions. Actual planning must be reviewed before execution.</p>
+                </div>
+                <div className="overflow-x-auto rounded-2xl border border-zinc-200">
+                  <table className="w-full min-w-[720px] text-sm">
+                    <thead className="bg-zinc-50 text-zinc-500 text-[10px] uppercase tracking-widest">
+                      <tr>
+                        <th className="text-left p-4 font-bold">Goal</th>
+                        <th className="text-left p-4 font-bold">Target Amount</th>
+                        <th className="text-left p-4 font-bold">Horizon</th>
+                        <th className="text-left p-4 font-bold">Monthly Needed</th>
+                        <th className="text-left p-4 font-bold">Priority</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.goalRows.length ? result.goalRows.map((goal, index) => (
+                        <tr key={`${goal.goal}-${index}`} className="border-t border-zinc-100">
+                          <td className="p-4 text-zinc-900 font-medium">{goal.goal}</td>
+                          <td className="p-4 text-zinc-700">{goal.target}</td>
+                          <td className="p-4 text-zinc-700">{goal.horizon}</td>
+                          <td className="p-4 text-emerald-700 font-medium">{goal.monthly}</td>
+                          <td className="p-4"><span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium">{goal.priority}</span></td>
+                        </tr>
+                      )) : (
+                        <tr><td className="p-4 text-zinc-500" colSpan="5">Add a goal and target amount to generate a clearer goal map.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 mb-2">Strategic Investment Projection</p>
+                <h3 className="text-2xl sm:text-3xl font-light tracking-tight text-zinc-950 mb-5">Scenario-based growth, not promised returns</h3>
+                <div className="overflow-x-auto rounded-2xl border border-zinc-200">
+                  <table className="w-full min-w-[720px] text-sm">
+                    <thead className="bg-zinc-50 text-zinc-500 text-[10px] uppercase tracking-widest">
+                      <tr>
+                        <th className="text-left p-4 font-bold">Period</th>
+                        <th className="text-left p-4 font-bold">Conservative 6%</th>
+                        <th className="text-left p-4 font-bold">Balanced 9%</th>
+                        <th className="text-left p-4 font-bold">Growth 12%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.projectionRows.map((row) => (
+                        <tr key={row.years} className="border-t border-zinc-100">
+                          <td className="p-4 text-zinc-900 font-medium">{row.years} years</td>
+                          <td className="p-4 text-zinc-700">{formatCurrency(row.conservative)} approx.</td>
+                          <td className="p-4 text-zinc-700">{formatCurrency(row.balanced)} approx.</td>
+                          <td className="p-4 text-emerald-700 font-medium">{formatCurrency(row.growth)} approx.</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-zinc-500 font-light mt-4 leading-relaxed">
+                  These are projections, not promises. Actual returns will depend on market performance, investment selection, fees, taxation, and investor behaviour. This is an educational projection and not guaranteed investment advice.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                {[
+                  ['30-Day Plan', 'Document income, expenses, EMIs, insurance, and emergency fund. Define the first goal with a realistic amount.'],
+                  ['90-Day Plan', 'Complete protection gaps, build emergency savings, reduce high-pressure debt, and start only suitable investment buckets.'],
+                  ['12-Month Plan', 'Review progress, rebalance broad allocation, increase SIP capacity if income and emergency cover allow it.'],
+                ].map(([title, copy]) => (
+                  <div key={title} className="bg-zinc-950 text-white rounded-2xl p-6">
+                    <p className="text-emerald-300 text-[10px] font-bold tracking-widest uppercase mb-3">{title}</p>
+                    <p className="text-sm text-zinc-300 font-light leading-relaxed">{copy}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-emerald-50 border border-emerald-100 rounded-[2rem] p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div>
+                  <h3 className="text-2xl sm:text-3xl font-light tracking-tight text-zinc-950 mb-2">Your money has a direction now.</h3>
+                  <p className="text-zinc-600 font-light">Book a session to convert this plan into a clear investment strategy.</p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <GeoButton onClick={() => openContactModal ? openContactModal('Goal Planning Session') : null} icon={ArrowRight}>
+                    Book a Goal Planning Session
+                  </GeoButton>
+                  <button onClick={resetAudit} className="px-6 py-4 rounded-xl border border-zinc-200 bg-white text-zinc-700 text-sm font-medium hover:bg-zinc-50 transition-colors">
+                    Edit Answers
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`text-left ${embedded ? '' : 'max-w-[1400px] mx-auto'}`}>
+      <div className="grid lg:grid-cols-12 gap-8 lg:gap-12">
+        <FadeIn direction="left" className="lg:col-span-4">
+          <div className="bg-zinc-950 text-white rounded-[2rem] p-8 lg:p-10 sticky top-28 overflow-hidden">
+            <div className="absolute top-0 right-0 w-[220px] h-[220px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/25 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10 text-emerald-200 text-[10px] font-bold tracking-widest uppercase mb-6">
+                <Sparkles className="w-4 h-4" /> AI Audit
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-light tracking-tighter mb-4">Personal Financial Goal Discovery</h2>
+              <p className="text-zinc-300 text-sm font-light leading-relaxed mb-8">
+                A guided discovery for first-time investors. The report checks readiness, risk comfort, goal clarity, and broad suitability before showing projections.
+              </p>
+              <div className="space-y-3">
+                {steps.map((label, index) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setStep(index)}
+                    className={`w-full flex items-center gap-3 text-left p-4 rounded-xl border transition-colors ${
+                      step === index ? 'bg-emerald-500/15 border-emerald-400/30 text-white' : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${step === index ? 'bg-emerald-500 text-white' : 'bg-white/10 text-zinc-400'}`}>{index + 1}</span>
+                    <span className="text-sm font-medium">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+
+        <FadeIn direction="up" delay={100} className="lg:col-span-8">
+          <form onSubmit={handleSubmit} className="bg-white border border-zinc-200/70 rounded-[2.5rem] p-6 sm:p-10 lg:p-12 shadow-2xl shadow-zinc-200/50">
+            <div className="mb-8">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-emerald-600 mb-2">Step {step + 1} of {steps.length}</p>
+              <h3 className="text-2xl sm:text-4xl font-light tracking-tight text-zinc-950">{steps[step]}</h3>
+            </div>
+
+            {step === 0 && (
+              <div className="grid sm:grid-cols-2 gap-5">
+                <AuditInput label="Full Name">
+                  <input className={inputClass} value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="e.g. Rajesh Sharma" />
+                </AuditInput>
+                <AuditInput label="Phone Number">
+                  <input className={inputClass} value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="10-digit mobile number" maxLength="10" />
+                </AuditInput>
+                <AuditInput label="Email Address">
+                  <input className={inputClass} type="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="you@example.com" />
+                </AuditInput>
+                <AuditInput label="Age">
+                  <input required className={inputClass} type="number" value={form.age} onChange={(e) => update('age', e.target.value)} placeholder="e.g. 32" />
+                </AuditInput>
+                <AuditInput label="Current Occupation">
+                  <input className={inputClass} value={form.occupation} onChange={(e) => update('occupation', e.target.value)} placeholder="Business / Salaried / Professional" />
+                </AuditInput>
+                <AuditInput label="Monthly Income After Tax">
+                  <input required className={inputClass} type="number" value={form.monthlyIncome} onChange={(e) => update('monthlyIncome', e.target.value)} placeholder="e.g. 85000" />
+                </AuditInput>
+                <AuditInput label="Dependents">
+                  <select className={selectClass} value={form.dependents} onChange={(e) => update('dependents', e.target.value)}>
+                    <option>No</option><option>Yes</option>
+                  </select>
+                </AuditInput>
+                <AuditInput label="Number of Dependents">
+                  <input className={inputClass} type="number" value={form.dependentsCount} onChange={(e) => update('dependentsCount', e.target.value)} placeholder="0" />
+                </AuditInput>
+                <AuditInput label="Income Stability">
+                  <select className={selectClass} value={form.incomeStability} onChange={(e) => update('incomeStability', e.target.value)}>
+                    <option>Very stable</option><option>Stable</option><option>Irregular</option><option>Uncertain</option>
+                  </select>
+                </AuditInput>
+              </div>
+            )}
+
+            {step === 1 && (
+              <div className="grid sm:grid-cols-2 gap-5">
+                <AuditInput label="Current Monthly Savings">
+                  <input required className={inputClass} type="number" value={form.monthlySavings} onChange={(e) => update('monthlySavings', e.target.value)} placeholder="e.g. 25000" />
+                </AuditInput>
+                <AuditInput label="Average Monthly Expenses">
+                  <input required className={inputClass} type="number" value={form.monthlyExpenses} onChange={(e) => update('monthlyExpenses', e.target.value)} placeholder="e.g. 55000" />
+                </AuditInput>
+                <AuditInput label="Emergency Fund">
+                  <select className={selectClass} value={form.emergencyFund} onChange={(e) => update('emergencyFund', e.target.value)}>
+                    <option>No</option><option>Less than 3 months</option><option>3–6 months</option><option>6+ months</option>
+                  </select>
+                </AuditInput>
+                <AuditInput label="Active Loans / EMIs">
+                  <select className={selectClass} value={form.hasLoans} onChange={(e) => update('hasLoans', e.target.value)}>
+                    <option>No</option><option>Yes</option>
+                  </select>
+                </AuditInput>
+                <AuditInput label="Monthly EMI Amount">
+                  <input className={inputClass} type="number" value={form.monthlyEmi} onChange={(e) => update('monthlyEmi', e.target.value)} placeholder="e.g. 15000" />
+                </AuditInput>
+                <AuditInput label="Insurance Status">
+                  <select className={selectClass} value={form.insuranceStatus} onChange={(e) => update('insuranceStatus', e.target.value)}>
+                    <option>None</option><option>Health</option><option>Life</option><option>Both</option><option>Not sure</option>
+                  </select>
+                </AuditInput>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-6">
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <AuditInput label="Have You Invested Before?">
+                    <select className={selectClass} value={form.investedBefore} onChange={(e) => update('investedBefore', e.target.value)}>
+                      <option>Never</option><option>FD only</option><option>Mutual funds</option><option>Stocks</option><option>Insurance products</option><option>Other</option>
+                    </select>
+                  </AuditInput>
+                  <AuditInput label="Comfortable Monthly Investment">
+                    <input required className={inputClass} type="number" value={form.monthlyInvestCapacity} onChange={(e) => update('monthlyInvestCapacity', e.target.value)} placeholder="e.g. 10000" />
+                  </AuditInput>
+                  <AuditInput label="Available Lump Sum">
+                    <input className={inputClass} type="number" value={form.lumpSum} onChange={(e) => update('lumpSum', e.target.value)} placeholder="e.g. 100000" />
+                  </AuditInput>
+                  <AuditInput label="Investment Knowledge Level">
+                    <select className={selectClass} value={form.knowledgeLevel} onChange={(e) => update('knowledgeLevel', e.target.value)}>
+                      <option>Beginner</option><option>Basic</option><option>Intermediate</option><option>Advanced</option>
+                    </select>
+                  </AuditInput>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-3">Top Financial Goals</label>
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    {goalOptions.map((goal) => (
+                      <button
+                        type="button"
+                        key={goal}
+                        onClick={() => toggleGoal(goal)}
+                        className={`p-4 rounded-xl border text-left text-sm transition-colors ${
+                          form.topGoals.includes(goal) ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-white'
+                        }`}
+                      >
+                        {goal}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <AuditInput label="Most Important Goal Right Now">
+                    <input required className={inputClass} value={form.primaryGoal} onChange={(e) => update('primaryGoal', e.target.value)} placeholder="e.g. Home down payment" />
+                  </AuditInput>
+                  <AuditInput label="Goal Timeline">
+                    <select className={selectClass} value={form.goalTimeline} onChange={(e) => update('goalTimeline', e.target.value)}>
+                      <option>0–2 years</option><option>3–5 years</option><option>6–10 years</option><option>10+ years</option>
+                    </select>
+                  </AuditInput>
+                  <AuditInput label="Target Amount Needed">
+                    <input required className={inputClass} type="number" value={form.targetAmount} onChange={(e) => update('targetAmount', e.target.value)} placeholder="e.g. 1500000" />
+                  </AuditInput>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="grid sm:grid-cols-2 gap-5">
+                <AuditInput label="Reaction to 10–15% Temporary Fall">
+                  <select className={selectClass} value={form.marketReaction} onChange={(e) => update('marketReaction', e.target.value)}>
+                    <option>Panic and withdraw</option><option>Wait but worry</option><option>Stay invested</option><option>Invest more</option>
+                  </select>
+                </AuditInput>
+                <AuditInput label="What Matters More?">
+                  <select className={selectClass} value={form.capitalPreference} onChange={(e) => update('capitalPreference', e.target.value)}>
+                    <option>Capital safety</option><option>Balanced growth</option><option>Higher long-term growth</option><option>Not sure</option>
+                  </select>
+                </AuditInput>
+                <div className="sm:col-span-2 bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
+                  <p className="text-sm text-emerald-900 font-light leading-relaxed">
+                    Ask Geo AI will first check risk profile and suitability. It will only show broad planning directions and scenario projections — no specific stocks, schemes, insurance products, or guaranteed returns.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row justify-between gap-4 mt-10 pt-8 border-t border-zinc-100">
+              <button
+                type="button"
+                onClick={() => setStep((prev) => Math.max(prev - 1, 0))}
+                disabled={step === 0}
+                className="px-6 py-4 rounded-xl border border-zinc-200 bg-white text-zinc-700 text-sm font-medium hover:bg-zinc-50 transition-colors disabled:opacity-40"
+              >
+                Back
+              </button>
+
+              {step < steps.length - 1 ? (
+                <GeoButton type="button" onClick={() => setStep((prev) => Math.min(prev + 1, steps.length - 1))} icon={ArrowRight}>
+                  Continue
+                </GeoButton>
+              ) : (
+                <GeoButton type="submit" disabled={isSending} icon={isSending ? Activity : Sparkles}>
+                  {isSending ? 'Generating Report...' : 'Generate AI Report'}
+                </GeoButton>
+              )}
+            </div>
+          </form>
+        </FadeIn>
+      </div>
+    </div>
+  );
+};
+
+const FinancialAuditPage = ({ setCurrentPage, openContactModal }) => {
+  useSEO("AI Financial Goal Audit", "A guided financial discovery audit for first-time investors with risk profiling, suitability checks, and scenario-based planning projections.", "audit");
+
+  return (
+    <div className="pt-32 pb-24 animate-in fade-in duration-700 text-left bg-zinc-50 min-h-screen">
+      <section className="px-6 sm:px-10 lg:px-16 xl:px-24 w-full max-w-[1800px] mx-auto py-16 lg:py-20">
+        <FadeIn direction="down" className="max-w-4xl mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold tracking-widest uppercase mb-6">
+            <Bot className="w-4 h-4" /> Ask Geo AI Audit
+          </div>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tighter text-zinc-950 mb-6 leading-[1.05]">
+            Discover your money goals <br />
+            <span className="font-medium text-emerald-600">before investing.</span>
+          </h1>
+          <p className="text-base sm:text-lg lg:text-xl text-zinc-500 font-light leading-relaxed">
+            This is not a KYC form. It is a guided financial discovery tool that checks your readiness, risk comfort, goals, and suitability before showing any strategy.
+          </p>
+        </FadeIn>
+        <FinancialAuditTool setCurrentPage={setCurrentPage} openContactModal={openContactModal} />
+      </section>
+    </div>
+  );
+};
+
+const SipSmartSummary = ({ monthlyInvestment, years, expectedReturn, totalInvested, maturityValue, wealthGained }) => {
+  const riskTone = expectedReturn <= 8 ? 'conservative' : expectedReturn <= 12 ? 'balanced' : 'growth-focused';
+  const horizonTone = years < 3 ? 'short-term' : years <= 7 ? 'medium-term' : 'long-term';
+  const discipline = monthlyInvestment >= 25000 ? 'strong monthly discipline' : monthlyInvestment >= 10000 ? 'healthy starting discipline' : 'early-stage investment discipline';
+  const fiveYearValue = sipFutureValue(monthlyInvestment, expectedReturn, 5);
+  const tenYearValue = sipFutureValue(monthlyInvestment, expectedReturn, 10);
+
+  return (
+    <FadeIn delay={450} direction="up">
+      <div className="mt-10 bg-white border border-emerald-100 rounded-[2rem] p-6 sm:p-8 shadow-xl shadow-emerald-100/40 text-left">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-2 text-emerald-600 mb-4">
+              <Bot className="w-5 h-5" />
+              <h4 className="text-xs font-semibold tracking-widest uppercase">Ask Geo AI Analysis</h4>
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-light tracking-tight text-zinc-950 mb-4">Smart Summary</h3>
+            <p className="text-sm sm:text-base text-zinc-600 font-light leading-relaxed">
+              With {formatCurrency(monthlyInvestment)} per month for {years} years, this looks like a {horizonTone}, {riskTone} projection with {discipline}. The important part is not just the final number — it is whether this SIP fits your emergency fund, insurance, debt pressure, and risk comfort.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 min-w-full lg:min-w-[340px]">
+            <div className="bg-zinc-50 border border-zinc-100 rounded-2xl p-4">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 mb-2">5-Year View</p>
+              <p className="text-xl font-light text-zinc-950">{formatCurrency(fiveYearValue)}</p>
+            </div>
+            <div className="bg-zinc-50 border border-zinc-100 rounded-2xl p-4">
+              <p className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 mb-2">10-Year View</p>
+              <p className="text-xl font-light text-emerald-700">{formatCurrency(tenYearValue)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-4 mt-6">
+          <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-5">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-emerald-700 mb-2">Suitability Check</p>
+            <p className="text-sm text-emerald-950 font-light leading-relaxed">Before increasing SIPs, ensure emergency fund, insurance, and EMI pressure are reviewed.</p>
+          </div>
+          <div className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 mb-2">Projection Reading</p>
+            <p className="text-sm text-zinc-600 font-light leading-relaxed">Projected value is {formatCurrency(maturityValue)}, out of which wealth gain is {formatCurrency(wealthGained)}.</p>
+          </div>
+          <div className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 mb-2">Important</p>
+            <p className="text-sm text-zinc-600 font-light leading-relaxed">These are projections, not promises. Final decisions should be reviewed by a qualified advisor.</p>
+          </div>
+        </div>
+      </div>
+    </FadeIn>
+  );
+};
+
+const AskGeoAICopilot = ({ setCurrentPage, openContactModal }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState([
+    {
+      role: 'assistant',
+      text: 'Hi, I’m Ask Geo AI Copilot. I can help you understand SIPs, risk profile, emergency funds, goal planning, and where to start.',
+    },
+  ]);
+
+  const getReply = (question) => {
+    const q = question.toLowerCase();
+    if (q.includes('audit') || q.includes('risk') || q.includes('profile')) {
+      return 'Start with the AI Audit. It checks savings rate, emergency fund, EMI pressure, insurance readiness, investment horizon, and reaction to market fall before showing any projection.';
+    }
+    if (q.includes('sip') || q.includes('invest')) {
+      return 'A SIP should match your cash flow and risk comfort. Before deciding the amount, check whether your emergency fund, insurance, and debt pressure are in place.';
+    }
+    if (q.includes('emergency')) {
+      return 'A practical emergency fund is usually built around essential monthly expenses. The audit uses your expenses to estimate a basic safety target before long-term investing.';
+    }
+    if (q.includes('goal')) {
+      return 'A goal needs three things: amount, timeline, and priority. Once these are clear, monthly investment required can be estimated using scenario-based assumptions.';
+    }
+    return 'Good question. For a safe starting point, use the AI Audit first. It will convert your answers into a simple financial snapshot, risk profile, goal map, and scenario projections.';
+  };
+
+  const sendMessage = (text = input) => {
+    const clean = text.trim();
+    if (!clean) return;
+    setMessages((prev) => [...prev, { role: 'user', text: clean }, { role: 'assistant', text: getReply(clean) }]);
+    setInput('');
+  };
+
+  return (
+    <>
+      {isOpen && (
+        <div className="fixed bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[380px] max-h-[620px] bg-white border border-zinc-200 rounded-[2rem] shadow-2xl shadow-zinc-900/20 z-[90] overflow-hidden animate-in zoom-in-95 duration-300 text-left">
+          <div className="bg-emerald-600 p-5 flex items-center justify-between relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-400/30 rounded-full blur-2xl pointer-events-none"></div>
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 text-white">
+                <Bot className="w-5 h-5" />
+                <h3 className="font-medium">Ask Geo AI Copilot</h3>
+              </div>
+              <p className="text-emerald-100 text-[10px] font-medium tracking-widest uppercase mt-1">Planning assistant</p>
+            </div>
+            <button onClick={() => setIsOpen(false)} className="relative z-10 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="p-5 space-y-4 max-h-[360px] overflow-y-auto bg-zinc-50">
+            {messages.map((msg, index) => (
+              <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm font-light leading-relaxed ${
+                  msg.role === 'user' ? 'bg-zinc-900 text-white' : 'bg-white border border-zinc-200 text-zinc-700'
+                }`}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4 border-t border-zinc-100 bg-white">
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <button onClick={() => { setCurrentPage('tools'); setIsOpen(false); window.scrollTo(0,0); }} className="text-xs px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 transition-colors">Open AI Audit</button>
+              <button onClick={() => openContactModal('Ask Geo AI Copilot Session')} className="text-xs px-3 py-2 rounded-xl bg-zinc-50 text-zinc-700 border border-zinc-200 hover:bg-white transition-colors">Book Session</button>
+            </div>
+            <div className="flex gap-2">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' ? sendMessage() : null}
+                className="flex-1 px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm bg-zinc-50 focus:bg-white"
+                placeholder="Ask about SIP, risk, goals..."
+              />
+              <button onClick={() => sendMessage()} className="w-12 h-12 rounded-xl bg-zinc-900 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors">
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="fixed bottom-6 right-6 z-[91] w-16 h-16 rounded-2xl bg-emerald-600 text-white shadow-2xl shadow-emerald-900/30 flex items-center justify-center hover:bg-emerald-700 transition-all duration-300 group"
+        aria-label="Open Ask Geo AI Copilot"
+      >
+        <Sparkles className="absolute w-5 h-5 -top-1 -right-1 bg-white text-emerald-600 rounded-full p-1 shadow-md animate-pulse" />
+        <Bot className="w-7 h-7 group-hover:scale-110 transition-transform" />
+      </button>
+    </>
+  );
+};
+
+
 const generateReport = async (config, leadData) => {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
@@ -780,6 +1633,14 @@ const SipCalculatorWidget = () => {
           </FadeIn>
         </div>
       </div>
+      <SipSmartSummary
+        monthlyInvestment={monthlyInvestment}
+        years={years}
+        expectedReturn={expectedReturn}
+        totalInvested={totalInvested}
+        maturityValue={maturityValue}
+        wealthGained={wealthGained}
+      />
       <LeadCaptureModal isOpen={isLeadModalOpen} onClose={() => setIsLeadModalOpen(false)} onDownloadComplete={handleDownloadComplete} />
     </>
   );
@@ -2869,9 +3730,10 @@ const ContactPage = () => {
 const CalculatorsPage = ({ setCurrentPage, openContactModal }) => {
   useSEO("Financial Tools & Calculators", "Use our advanced SIP, Lumpsum, and Retirement calculators to plan your financial future.", "tools");
   
-  const [activeTab, setActiveTab] = useState('sip');
+  const [activeTab, setActiveTab] = useState('audit');
 
   const tabs = [
+    { id: 'audit', name: '🤖 AI Audit', icon: Bot },
     { id: 'sip', name: 'SIP Pro', icon: TrendingUp },
     { id: 'stepup', name: 'Step-Up SIP', icon: Zap },
     { id: 'stp', name: 'STP to SIP', icon: RefreshCw },
@@ -2922,6 +3784,7 @@ const CalculatorsPage = ({ setCurrentPage, openContactModal }) => {
             </FadeIn>
 
             <div className="min-h-[550px]">
+              {activeTab === 'audit' && <FinancialAuditTool embedded setCurrentPage={setCurrentPage} openContactModal={openContactModal} />}
               {activeTab === 'sip' && <SipCalculatorWidget />}
               {activeTab === 'stepup' && <StepUpCalculatorWidget />}
               {activeTab === 'stp' && <StpToSipCalculatorWidget />}
@@ -3336,6 +4199,7 @@ const AskGeoApp = () => {
         {currentPage === 'insights' && <InsightsPage />}
         {currentPage === 'contact' && <ContactPage />}
         {currentPage === 'tools' && <CalculatorsPage setCurrentPage={setCurrentPage} openContactModal={openContactModal} />}
+        {currentPage === 'audit' && <FinancialAuditPage setCurrentPage={setCurrentPage} openContactModal={openContactModal} />}
         
         {currentPage === 'legal-privacy' && <LegalPage title="Privacy Policy" />}
         {currentPage === 'legal-terms' && <LegalPage title="Terms of Service" />}
@@ -3393,6 +4257,7 @@ const AskGeoApp = () => {
       
       {/* Render Modals at the Root Level */}
       <GeneralContactModal isOpen={isContactModalOpen} onClose={() => setContactModalOpen(false)} title={contactModalTitle} />
+      <AskGeoAICopilot setCurrentPage={setCurrentPage} openContactModal={openContactModal} />
     </div>
   );
 };
