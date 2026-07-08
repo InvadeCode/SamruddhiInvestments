@@ -10,6 +10,7 @@ import {
 
 // --- BACKEND API CONFIGURATION ---
 const TARGET_EMAIL = "geoconsultant@gmail.com";
+const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || "https://ask-geo.onrender.com").replace(/\/$/, "");
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const SUPABASE_AUDIT_TABLE = import.meta.env.VITE_SUPABASE_AUDIT_TABLE || "financial_goal_audits";
@@ -31,7 +32,7 @@ const fetchWithTimeout = async (url, options = {}, timeout = 60000) => {
 
 const wakeBackend = async () => {
   try {
-    await fetchWithTimeout("https://ask-geo.onrender.com/", { method: "GET" }, 20000);
+    await fetchWithTimeout(`${BACKEND_URL}/`, { method: "GET" }, 20000);
   } catch (error) {
     console.warn("Wake ping finished (server should be spinning up).");
   }
@@ -60,8 +61,8 @@ const sendEmailViaBackend = async (subject, htmlBody, attachments = [], to = TAR
   await wakeBackend();
 
   const endpointsToTry = [
-    "https://ask-geo.onrender.com/api/submit",
-    "https://ask-geo.onrender.com/api/send-email"
+    `${BACKEND_URL}/api/submit`,
+    `${BACKEND_URL}/api/send-email`
   ];
 
   let response;
@@ -389,7 +390,7 @@ const GeneralContactModal = ({ isOpen, onClose, title }) => {
                 <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Phone Number</label>
                 <div className="flex">
                   <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-zinc-200 bg-zinc-100 text-zinc-500 text-sm font-medium">+91</span>
-                  <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-4 py-3 rounded-r-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile number" />
+                  <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value.replace(/\D/g, '')})} className="w-full px-4 py-3 rounded-r-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile number" />
                 </div>
               </div>
               <div>
@@ -650,6 +651,40 @@ const loadHtml2Pdf = async () => {
   });
 };
 
+const loadJsPdf = async () => {
+  if (window.jspdf?.jsPDF) return;
+
+  await new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-jspdf="true"]');
+    if (existing) {
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', () => reject(new Error('jsPDF failed to load')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.async = true;
+    script.dataset.jspdf = 'true';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('jsPDF failed to load'));
+    document.head.appendChild(script);
+  });
+};
+
+const safePdfText = (value) => String(value ?? '')
+  .replace(/₹/g, 'Rs. ')
+  .replace(/[–—]/g, '-')
+  .replace(/[“”]/g, '"')
+  .replace(/[‘’]/g, "'");
+
+const addWrappedPdfText = (pdf, text, x, y, maxWidth, lineHeight = 5) => {
+  const lines = pdf.splitTextToSize(safePdfText(text), maxWidth);
+  pdf.text(lines, x, y);
+  return y + (lines.length * lineHeight);
+};
+
+
 const getAuditPdfMarkup = (form, result) => {
   const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
   const refId = `AG-AUDIT-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -778,35 +813,316 @@ const getAuditPdfMarkup = (form, result) => {
 };
 
 const createAuditPdfDataUri = async (form, result) => {
-  await loadHtml2Pdf();
+  await loadJsPdf();
 
-  let hiddenDiv = null;
-  try {
-    hiddenDiv = document.createElement('div');
-    hiddenDiv.style.position = 'fixed';
-    hiddenDiv.style.left = '-10000px';
-    hiddenDiv.style.top = '0';
-    hiddenDiv.style.width = '210mm';
-    hiddenDiv.style.background = '#ffffff';
-    hiddenDiv.innerHTML = getAuditPdfMarkup(form, result);
-    document.body.appendChild(hiddenDiv);
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
 
-    const targetElement = hiddenDiv.querySelector('#audit-pdf-content');
-    return await window.html2pdf()
-      .set({
-        margin: 0,
-        filename: getAuditReportFilename(form),
-        image: { type: 'jpeg', quality: 0.92 },
-        html2canvas: { scale: 1.5, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
-      })
-      .from(targetElement)
-      .outputPdf('datauristring');
-  } finally {
-    if (hiddenDiv && document.body.contains(hiddenDiv)) {
-      document.body.removeChild(hiddenDiv);
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const marginX = 14;
+  const green = [4, 120, 87];
+  const lightGreen = [236, 253, 245];
+  const zinc = [24, 24, 27];
+  const muted = [82, 82, 91];
+  const border = [229, 231, 235];
+
+  const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+  const refId = `AG-AUDIT-${Math.floor(100000 + Math.random() * 900000)}`;
+
+  const addFooter = () => {
+    pdf.setDrawColor(...border);
+    pdf.line(marginX, 283, pageWidth - marginX, 283);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(113, 113, 122);
+    pdf.text(
+      safePdfText('Educational projection only. Not investment advice, product recommendation, or guarantee of returns.'),
+      marginX,
+      288
+    );
+    pdf.text(safePdfText('Ask Geo Financial Services'), pageWidth - marginX, 288, { align: 'right' });
+  };
+
+  const addHeader = () => {
+    pdf.setFillColor(...green);
+    pdf.rect(0, 0, pageWidth, 78, 'F');
+
+    pdf.setFillColor(255, 255, 255);
+    pdf.roundedRect(marginX, 13, 31, 12, 2, 2, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8);
+    pdf.setTextColor(...green);
+    pdf.text('ASK GEO', marginX + 6, 21);
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8);
+    pdf.setTextColor(167, 243, 208);
+    pdf.text('FINANCIAL GOAL AUDIT', marginX, 39);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(24);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('Personal Financial Discovery Report', marginX, 52);
+
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(209, 250, 229);
+    addWrappedPdfText(
+      pdf,
+      'This report summarises the information submitted by the client and converts it into a financial snapshot, risk profile, suitability view, goal map, and scenario-based projection.',
+      marginX,
+      61,
+      155,
+      4.2
+    );
+
+    pdf.setDrawColor(255, 255, 255);
+    pdf.setLineWidth(0.15);
+    pdf.line(marginX, 68, pageWidth - marginX, 68);
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(7);
+    pdf.setTextColor(209, 250, 229);
+    pdf.text('PREPARED FOR', marginX, 73);
+    pdf.text('DATE', pageWidth - marginX, 73, { align: 'right' });
+
+    pdf.setFontSize(9);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(safePdfText(form.name || 'Website Visitor'), marginX, 77);
+    pdf.text(today, pageWidth - marginX, 77, { align: 'right' });
+  };
+
+  const metricCard = (x, y, w, h, label, value, accent = false) => {
+    pdf.setFillColor(accent ? lightGreen[0] : 249, accent ? lightGreen[1] : 250, accent ? lightGreen[2] : 251);
+    pdf.setDrawColor(...border);
+    pdf.roundedRect(x, y, w, h, 3, 3, 'FD');
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(6.6);
+    pdf.setTextColor(113, 113, 122);
+    pdf.text(safePdfText(label).toUpperCase(), x + 4, y + 6);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(11);
+    pdf.setTextColor(...(accent ? green : zinc));
+    const lines = pdf.splitTextToSize(safePdfText(value), w - 8);
+    pdf.text(lines.slice(0, 2), x + 4, y + 13);
+  };
+
+  const sectionTitle = (title, y) => {
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(15);
+    pdf.setTextColor(...zinc);
+    pdf.text(safePdfText(title), marginX, y);
+    return y + 8;
+  };
+
+  const table = (headers, rows, x, y, widths, options = {}) => {
+    const rowHeight = options.rowHeight || 10;
+
+    pdf.setFillColor(244, 244, 245);
+    pdf.setDrawColor(...border);
+    pdf.rect(x, y, widths.reduce((a, b) => a + b, 0), rowHeight, 'FD');
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(6.4);
+    pdf.setTextColor(82, 82, 91);
+
+    let cx = x;
+    headers.forEach((header, i) => {
+      pdf.text(safePdfText(header).toUpperCase(), cx + 2, y + 6.5);
+      cx += widths[i];
+    });
+
+    y += rowHeight;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(...zinc);
+
+    rows.forEach((row) => {
+      let maxLines = 1;
+      const wrapped = row.map((cell, i) => {
+        const lines = pdf.splitTextToSize(safePdfText(cell), widths[i] - 4);
+        maxLines = Math.max(maxLines, lines.length);
+        return lines;
+      });
+
+      const h = Math.max(rowHeight, maxLines * 4.1 + 4);
+
+      if (y + h > 278) {
+        addFooter();
+        pdf.addPage();
+        y = 18;
+      }
+
+      pdf.setDrawColor(...border);
+      pdf.rect(x, y, widths.reduce((a, b) => a + b, 0), h);
+      cx = x;
+
+      wrapped.forEach((lines, i) => {
+        pdf.text(lines, cx + 2, y + 5.5);
+        cx += widths[i];
+      });
+
+      y += h;
+    });
+
+    return y + 7;
+  };
+
+  addHeader();
+
+  let y = 91;
+
+  const cardW = 57;
+  const cardH = 20;
+  const gap = 6;
+  const metrics = [
+    ['Client Type', result.clientType, true],
+    ['Risk Profile', result.riskProfile, true],
+    ['Health Score', `${result.financialHealthScore}/100`, true],
+    ['Monthly Income', formatCurrency(result.income)],
+    ['Monthly Expenses', formatCurrency(result.expenses)],
+    ['Monthly Savings', formatCurrency(result.savings)],
+    ['Savings Rate', `${result.savingsRate.toFixed(1)}%`],
+    ['Investable Surplus', formatCurrency(result.investableSurplus), true],
+    ['Emergency Fund', result.emergencyStatus],
+  ];
+
+  metrics.forEach(([label, value, accent], index) => {
+    const col = index % 3;
+    const row = Math.floor(index / 3);
+    metricCard(marginX + col * (cardW + gap), y + row * (cardH + gap), cardW, cardH, label, value, accent);
+  });
+
+  y += 3 * (cardH + gap) + 4;
+
+  pdf.setFillColor(...lightGreen);
+  pdf.setDrawColor(209, 250, 229);
+  pdf.roundedRect(marginX, y, pageWidth - marginX * 2, 28, 4, 4, 'FD');
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7);
+  pdf.setTextColor(...green);
+  pdf.text('SUITABILITY SUMMARY', marginX + 5, y + 7);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8.6);
+  pdf.setTextColor(6, 78, 59);
+  addWrappedPdfText(
+    pdf,
+    `Your current profile suggests a ${result.riskProfile} risk profile. The first priority is suitability: emergency fund, insurance readiness, debt pressure, and investment horizon should be reviewed before any market-linked strategy is executed.`,
+    marginX + 5,
+    y + 14,
+    pageWidth - marginX * 2 - 10,
+    4.2
+  );
+
+  y += 40;
+  y = sectionTitle('Goal Conversion', y);
+
+  const goalRows = (result.goalRows || []).length
+    ? result.goalRows.map((goal) => [goal.goal, goal.target, goal.horizon, goal.monthly, goal.priority])
+    : [['No goal map generated', 'Needs goal details', '-', '-', '-']];
+
+  y = table(
+    ['Goal', 'Target', 'Horizon', 'Monthly Needed', 'Priority'],
+    goalRows,
+    marginX,
+    y,
+    [43, 36, 28, 45, 28],
+    { rowHeight: 10 }
+  );
+
+  y = sectionTitle('Scenario-Based Growth Projection', y);
+
+  const projectionRows = (result.projectionRows || []).map((row) => [
+    `${row.years} years`,
+    `${formatCurrency(row.conservative)} approx.`,
+    `${formatCurrency(row.balanced)} approx.`,
+    `${formatCurrency(row.growth)} approx.`,
+  ]);
+
+  y = table(
+    ['Period', 'Conservative 6%', 'Balanced 9%', 'Growth 12%'],
+    projectionRows,
+    marginX,
+    y,
+    [30, 50, 50, 50],
+    { rowHeight: 10 }
+  );
+
+  addFooter();
+
+  pdf.addPage();
+
+  y = 18;
+  y = sectionTitle('Risk Profile Logic', y);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  pdf.setTextColor(...muted);
+  y = addWrappedPdfText(
+    pdf,
+    `Risk Score: ${result.riskScore}/100. This classification considers age, income stability, savings rate, emergency fund status, EMI burden, investment horizon, and reaction to temporary market fall. It is a suitability filter, not a product recommendation.`,
+    marginX,
+    y,
+    180,
+    4.8
+  ) + 4;
+
+  y = sectionTitle('Strategic Direction', y);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  pdf.setTextColor(...zinc);
+
+  (result.allocationDirection || []).forEach((item) => {
+    if (y > 270) {
+      addFooter();
+      pdf.addPage();
+      y = 18;
     }
-  }
+    pdf.setFillColor(...green);
+    pdf.circle(marginX + 1.5, y - 1.5, 1.2, 'F');
+    y = addWrappedPdfText(pdf, item, marginX + 6, y, 174, 4.8) + 2;
+  });
+
+  y += 5;
+  y = sectionTitle('Action Plan', y);
+
+  const actionRows = [
+    ['30-Day Plan', 'Document income, expenses, EMIs, insurance, and emergency fund. Define the first goal with a realistic amount.'],
+    ['90-Day Plan', 'Complete protection gaps, build emergency savings, reduce high-pressure debt, and start only suitable investment buckets.'],
+    ['12-Month Plan', 'Review progress, rebalance broad allocation, and increase SIP capacity only if cash flow and safety cover allow it.'],
+  ];
+
+  y = table(
+    ['Timeline', 'Recommended Focus'],
+    actionRows,
+    marginX,
+    y,
+    [42, 138],
+    { rowHeight: 12 }
+  );
+
+  y = sectionTitle('Disclaimer', y);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8.5);
+  pdf.setTextColor(113, 113, 122);
+  addWrappedPdfText(
+    pdf,
+    'This is an educational projection and not guaranteed investment advice. It does not recommend specific stocks, mutual fund schemes, insurance products, or guaranteed returns. Final investment decisions should be reviewed by a qualified financial advisor. Actual returns depend on market performance, investment selection, fees, taxation, and investor behaviour.',
+    marginX,
+    y,
+    180,
+    4.5
+  );
+
+  addFooter();
+
+  return pdf.output('datauristring');
 };
 
 const saveAuditSubmissionToSupabase = async (form, result) => {
@@ -1194,9 +1510,9 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
 
   return (
     <div className={`text-left ${embedded ? '' : 'max-w-[1400px] mx-auto'}`}>
-      <div className="grid lg:grid-cols-12 gap-8 lg:gap-12">
-        <FadeIn direction="left" className="lg:col-span-4">
-          <div className="bg-zinc-950 text-white rounded-[2rem] p-8 lg:p-10 sticky top-28 overflow-hidden">
+      <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 lg:items-stretch">
+        <FadeIn direction="left" className="lg:col-span-4 h-full">
+          <div className="bg-zinc-950 text-white rounded-[2rem] p-8 lg:p-10 lg:sticky lg:top-28 overflow-hidden h-full lg:min-h-[760px]">
             <div className="absolute top-0 right-0 w-[220px] h-[220px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/25 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10 text-emerald-200 text-[10px] font-bold tracking-widest uppercase mb-6">
@@ -1225,8 +1541,8 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
           </div>
         </FadeIn>
 
-        <FadeIn direction="up" delay={100} className="lg:col-span-8">
-          <form onSubmit={handleSubmit} className="bg-white border border-zinc-200/70 rounded-[2.5rem] p-6 sm:p-10 lg:p-12 shadow-2xl shadow-zinc-200/50">
+        <FadeIn direction="up" delay={100} className="lg:col-span-8 h-full">
+          <form onSubmit={handleSubmit} className="bg-white border border-zinc-200/70 rounded-[2.5rem] p-6 sm:p-10 lg:p-12 shadow-2xl shadow-zinc-200/50 h-full lg:min-h-[760px] flex flex-col">
             <div className="mb-8">
               <p className="text-[10px] font-bold tracking-widest uppercase text-emerald-600 mb-2">Step {step + 1} of {steps.length}</p>
               <h3 className="text-2xl sm:text-4xl font-light tracking-tight text-zinc-950">{steps[step]}</h3>
@@ -1372,7 +1688,7 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row justify-between gap-4 mt-10 pt-8 border-t border-zinc-100">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 mt-auto pt-8 border-t border-zinc-100">
               <button
                 type="button"
                 onClick={() => setStep((prev) => Math.max(prev - 1, 0))}
@@ -1383,7 +1699,15 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
               </button>
 
               {step < steps.length - 1 ? (
-                <GeoButton type="button" onClick={() => setStep((prev) => Math.min(prev + 1, steps.length - 1))} icon={ArrowRight}>
+                <GeoButton
+                  type="button"
+                  onClick={(e) => {
+                    const formElement = e.currentTarget.closest('form');
+                    if (formElement && !formElement.reportValidity()) return;
+                    setStep((prev) => Math.min(prev + 1, steps.length - 1));
+                  }}
+                  icon={ArrowRight}
+                >
                   Continue
                 </GeoButton>
               ) : (
@@ -1704,7 +2028,7 @@ const LeadCaptureModal = ({ isOpen, onClose, onDownloadComplete }) => {
               <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Phone Number</label>
               <div className="flex">
                 <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-zinc-200 bg-zinc-100 text-zinc-500 text-sm font-medium">+91</span>
-                <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-4 py-3 rounded-r-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile number" />
+                <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value.replace(/\D/g, '')})} className="w-full px-4 py-3 rounded-r-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile number" />
               </div>
             </div>
             <div>
@@ -1730,31 +2054,39 @@ const SipCalculatorWidget = () => {
   const ratePerMonth = expectedReturn / 12 / 100;
   const totalMonths = years * 12;
   const totalInvested = monthlyInvestment * totalMonths;
-  const maturityValue = monthlyInvestment * ((Math.pow(1 + ratePerMonth, totalMonths) - 1) / ratePerMonth) * (1 + ratePerMonth);
+  const maturityValue =
+    ratePerMonth === 0
+      ? monthlyInvestment * totalMonths
+      : monthlyInvestment * ((Math.pow(1 + ratePerMonth, totalMonths) - 1) / ratePerMonth);
   const wealthGained = maturityValue - totalInvested;
 
   const getMarketAllocation = (amount, returnRate) => {
     let distribution = [];
-    if (returnRate >= 14) { 
+
+    if (returnRate >= 14) {
       distribution = [
-        { name: 'Nippon India Small Cap Fund', category: 'Small Cap', percent: 40 },
-        { name: 'Motilal Oswal Midcap Fund', category: 'Mid Cap', percent: 35 },
-        { name: 'Parag Parikh Flexi Cap Fund', category: 'Flexi Cap', percent: 25 },
+        { name: 'Small Cap Equity Bucket', category: 'High Risk', percent: 35 },
+        { name: 'Mid Cap Equity Bucket', category: 'High Growth', percent: 35 },
+        { name: 'Flexi Cap Equity Bucket', category: 'Core Growth', percent: 30 },
       ];
-    } else if (returnRate >= 10) { 
+    } else if (returnRate >= 10) {
       distribution = [
-        { name: 'HDFC Index Fund Nifty 50 Plan', category: 'Large Cap', percent: 40 },
-        { name: 'Parag Parikh Flexi Cap Fund', category: 'Flexi Cap', percent: 40 },
-        { name: 'SBI Magnum Midcap Fund', category: 'Mid Cap', percent: 20 },
+        { name: 'Large Cap / Index Bucket', category: 'Core Equity', percent: 40 },
+        { name: 'Flexi Cap Bucket', category: 'Balanced Equity', percent: 40 },
+        { name: 'Mid Cap Bucket', category: 'Growth Satellite', percent: 20 },
       ];
-    } else { 
+    } else {
       distribution = [
-        { name: 'ICICI Prudential Bluechip Fund', category: 'Large Cap', percent: 50 },
-        { name: 'Kotak Balanced Advantage Fund', category: 'Hybrid', percent: 30 },
-        { name: 'Aditya Birla Sun Life Liquid Fund', category: 'Debt', percent: 20 },
+        { name: 'Large Cap / Index Bucket', category: 'Core Equity', percent: 45 },
+        { name: 'Hybrid / Balanced Bucket', category: 'Moderate Risk', percent: 35 },
+        { name: 'Debt / Liquid Bucket', category: 'Stability', percent: 20 },
       ];
     }
-    return distribution.map(fund => ({ ...fund, amount: Math.round(amount * (fund.percent / 100)) }));
+
+    return distribution.map((fund) => ({
+      ...fund,
+      amount: Math.round(amount * (fund.percent / 100)),
+    }));
   };
 
   const handleDownloadInitiate = () => setIsLeadModalOpen(true);
@@ -1808,7 +2140,7 @@ const SipCalculatorWidget = () => {
                   <Bot className="w-5 h-5" />
                   <h4 className="text-xs font-semibold tracking-widest uppercase">Live Market Allocation</h4>
                </div>
-               <p className="text-sm text-zinc-600 mb-5 font-light">To achieve {expectedReturn}% p.a., Ask Geo recommends deploying your {formatCurrency(monthlyInvestment)} across these specific funds:</p>
+               <p className="text-sm text-zinc-600 mb-5 font-light">To achieve {expectedReturn}% p.a., Ask Geo shows an indicative category-level allocation for your {formatCurrency(monthlyInvestment)} monthly SIP. This is not a scheme recommendation.</p>
                <div className="space-y-3">
                   {getMarketAllocation(monthlyInvestment, expectedReturn).map((fund, idx) => (
                     <div key={idx} className="flex justify-between items-center text-sm border-b border-zinc-100 pb-3 last:border-0 last:pb-0 hover:bg-zinc-50 rounded-lg p-2 transition-colors">
@@ -2462,7 +2794,7 @@ const ExtraEmiCalculatorWidget = () => {
                  <div className="bg-white/5 p-3 rounded-xl border border-white/10">
                     <p className="text-[8px] font-medium tracking-widest text-emerald-200 uppercase mb-1">Saved by rate drop</p>
                     <p className="text-sm font-bold text-emerald-400 mb-1">{formatYM(safeTime(savedTimeRateDrop))}</p>
-                    <p className="text-[9px] text-zinc-400">{formatShortAmt(safeMoney(savedTimeRateDrop))}</p>
+                    <p className="text-[9px] text-zinc-400">{formatShortAmt(safeMoney(savedMoneyRateDrop))}</p>
                  </div>
                  <div className="bg-white/5 p-3 rounded-xl border border-white/10">
                     <p className="text-[8px] font-medium tracking-widest text-emerald-200 uppercase mb-1">Saved by prepay</p>
@@ -3048,13 +3380,13 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
   return (
     <>
       {/* --- Dynamic Hero Section --- */}
-      <section id="home" className="relative pt-36 sm:pt-44 pb-20 sm:pb-28 lg:pt-52 lg:pb-32 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-20 overflow-hidden bg-zinc-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
+      <section   id="home"   className="relative min-h-[100svh] lg:min-h-[100dvh] pt-28 sm:pt-32 lg:pt-28 pb-16 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto flex items-center overflow-hidden bg-zinc-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]" >
         {/* Soft Animated Background Orbs */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-200/30 rounded-full blur-[120px] -z-10 animate-blob"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-200/30 rounded-full blur-[100px] -z-10 animate-blob animation-delay-2000"></div>
         <div className="absolute top-1/2 left-1/4 w-[400px] h-[400px] bg-green-200/20 rounded-full blur-[100px] -z-10 animate-blob animation-delay-4000"></div>
 
-        <div className="w-full max-w-[1800px] mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+        <div className="w-full max-w-[1800px] mx-auto flex flex-col lg:flex-row items-center gap-8 lg:gap-16 relative z-10">
           <div className="lg:w-1/2 z-10 relative">
             <FadeIn delay={0} direction="down">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-emerald-100 shadow-sm text-emerald-700 text-[10px] sm:text-xs font-bold tracking-widest mb-8">
@@ -3063,7 +3395,7 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
             </FadeIn>
             
             <FadeIn delay={150} direction="right">
-              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light tracking-tighter leading-[1.05] text-zinc-950 mb-8">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-7xl xl:text-8xl font-light tracking-tighter leading-[1.05] text-zinc-950 mb-6">
                 For expert advice, <br />
                 <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">
                   Ask Geo.
@@ -3085,7 +3417,7 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
           </div>
 
           {/* Hero Abstract Graphic */}
-          <div className="lg:w-1/2 relative w-full h-[450px] sm:h-[550px] lg:h-[650px] mt-10 lg:mt-0 perspective-1000">
+          <div className="lg:w-1/2 relative w-full h-[380px] sm:h-[460px] lg:h-[calc(100dvh-230px)] lg:min-h-[480px] lg:max-h-[620px] mt-6 lg:mt-0 perspective-1000">
             <FadeIn delay={600} direction="zoom" className="w-full h-full relative flex items-center justify-center">
               
               <div className="w-[85%] max-w-[300px] sm:max-w-[340px] lg:max-w-[380px] relative z-10">
@@ -3685,95 +4017,48 @@ const BlogPostPage = ({ post, onBack }) => {
 // --- INSIGHTS PAGE COMPONENT ---
 const InsightsPage = () => {
   useSEO("Market Insights", "Stay ahead of the curve with our latest market analyses and economic updates.", "insights");
-  
-  const [selectedPost, setSelectedPost] = useState(null);
-  const [posts, setPosts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   const mockArticles = [
     { 
       title: "The Impact of Global Rates on Indian Equities", 
       date: "April 2026", 
       category: "Macroeconomics",
-      content: "The Reserve Bank of India has maintained a distinct posture relative to global central banks. As the Federal Reserve contemplates prolonged elevated rates, Indian markets are digesting the implications for foreign institutional flows.\n\nHistorically, a tightening global liquidity environment creates short-term volatility in emerging markets. However, the underlying domestic consumption story in India remains robust. Earnings growth in the mid-cap sector shows resilience despite external headwinds.\n\nInvestors must look beyond immediate rate announcements and focus on sector-specific fundamentals. Banking and infrastructure are well-positioned to weather the storm, provided corporate balance sheets maintain their current deleveraged status."
+      content: "The Reserve Bank of India has maintained a distinct posture relative to global central banks. As global rates remain an important variable, Indian markets continue to digest the implications for foreign institutional flows.\n\nHistorically, a tightening global liquidity environment can create short-term volatility in emerging markets. However, India's domestic consumption story, corporate earnings base, and structural growth potential remain important long-term anchors.\n\nInvestors should look beyond immediate rate commentary and focus on asset allocation, risk management, and time horizon."
     },
     { 
       title: "Debt Market Opportunities in a Shifting Cycle", 
       date: "March 2026", 
       category: "Debt Strategy",
-      content: "The debt market is presenting unique opportunities that haven't been seen in the last decade. As we approach what many analysts believe is the peak of the interest rate cycle, locking in yields has become a primary strategy for conservative portfolios.\n\nTarget maturity funds are offering exceptional predictability. By matching your investment horizon with the maturity profile of the fund, you effectively immunize your portfolio against interest rate risk while capturing current high yields.\n\nWe recommend a staggered approach to building long-term fixed income assets, utilizing a mix of sovereign bonds and high-quality corporate paper."
+      content: "Debt markets can play a critical role in portfolio stability, especially when investors need predictable cash flow and lower volatility.\n\nTarget maturity, short-duration, and high-quality fixed-income buckets can help investors align investment choices with time horizons. The objective is not only return, but also liquidity, tax efficiency, and capital protection.\n\nA staggered approach can help reduce timing risk and create a more balanced long-term portfolio."
     },
     { 
-      title: "Decoding the Latest Union Budget Implications", 
+      title: "Decoding Budget Implications for Investors", 
       date: "February 2026", 
       category: "Taxation",
-      content: "The recent Union Budget has introduced several structural changes that directly impact how wealth is compounded and taxed. The most significant shift lies in the treatment of capital gains across different asset classes.\n\nThe harmonization of holding periods for equity and debt instruments alters the traditional asset allocation math. Investors can no longer rely solely on historical tax arbitrage when choosing between mutual fund categories.\n\nAt Ask Geo, our models have been recalibrated to account for these new fiscal realities, ensuring that post-tax returns—the only returns that truly matter—are optimized for every client."
+      content: "Budget announcements can influence taxation, savings behaviour, capital gains, and sector-level expectations.\n\nFor investors, the right response is not emotional portfolio churn but a careful review of post-tax returns, investment holding periods, and goal timelines.\n\nA good portfolio should be built for changing tax and market environments while still staying aligned with the investor's life goals."
     },
     { 
-      title: "Why Flexi-Cap Funds Are Gaining Traction", 
+      title: "Why Flexi-Cap Strategies Matter", 
       date: "January 2026", 
       category: "Mutual Funds",
-      content: "Flexi-cap funds offer fund managers the ultimate mandate: go where the value is. Unlike rigidly defined large-cap or small-cap funds, this category allows for dynamic shifting across market capitalizations based on real-time valuations.\n\nIn a market characterized by rapid sector rotation, this agility is paramount. When large caps become overvalued, a flexi-cap manager can seamlessly pivot to under-researched mid-caps without requiring the investor to manually trigger tax-inefficient rebalancing.\n\nHowever, manager selection is crucial. The freedom to roam requires exceptional stock-picking acumen."
+      content: "Flexi-cap strategies allow allocation across large-cap, mid-cap, and small-cap opportunities depending on market valuation and manager view.\n\nThis flexibility can help investors participate in growth while avoiding overdependence on one market-cap segment. However, fund selection and suitability still matter.\n\nInvestors should review risk profile, investment horizon, and overall portfolio overlap before choosing any market-linked product."
     },
     { 
-      title: "Understanding Systematic Transfer Plans (STP)", 
+      title: "Understanding Systematic Transfer Plans", 
       date: "December 2025", 
       category: "Wealth Basics",
-      content: "A Systematic Transfer Plan (STP) is an elegant solution to a common psychological hurdle: deploying a large lumpsum of cash in a volatile market.\n\nInstead of attempting to time the market—a statistically flawed endeavor—an STP allows you to park your capital in a stable, low-risk debt fund. From there, a fixed amount is systematically transferred into an equity fund every month.\n\nThis achieves two things: your parked capital earns a higher return than a savings account, and your equity deployment benefits from rupee-cost averaging, mitigating the risk of entering the market at a peak."
+      content: "A Systematic Transfer Plan can help investors deploy a large lump sum gradually instead of investing the full amount at once.\n\nThe approach can reduce timing anxiety and create a disciplined transfer mechanism from a relatively stable bucket into a growth-oriented bucket.\n\nIt is especially useful when the investor has a clear deployment horizon and does not want to make a single market-timing decision."
     },
     { 
       title: "The Rise of Passive Investing in India", 
       date: "November 2025", 
       category: "ETFs",
-      content: "Passive investing—specifically via Index Funds and ETFs—has crossed a critical inflection point in the Indian market. As the market matures and information asymmetry decreases, generating pure 'alpha' (outperforming the benchmark) in the large-cap space has become increasingly difficult.\n\nInstitutional investors recognized this trend years ago, and retail investors are finally catching up. The mathematical advantage of ultra-low expense ratios compounds massively over a 10 to 20-year horizon.\n\nWhile active management remains vital in the mid and small-cap space where inefficiencies still exist, a core holding of low-cost passive funds is now standard in modern portfolio architecture."
+      content: "Passive investing through index funds and ETFs has become increasingly relevant as investors look for low-cost, transparent, rules-based exposure.\n\nA passive allocation can work well as the core of a long-term portfolio, while active strategies may still have a role in less efficient parts of the market.\n\nThe final mix should depend on investor goals, risk appetite, time horizon, and cost sensitivity."
     }
   ];
 
-  useEffect(() => {
-    const fetchSanityPosts = async () => {
-      // -------------------------------------------------------------
-      // TO THE DEVELOPER / OWNER: 
-      // Replace 'YOUR_PROJECT_ID' with your actual Sanity Project ID.
-      // -------------------------------------------------------------
-      const PROJECT_ID = '3dj8otg2'; 
-      const DATASET = 'production';
-      const TOKEN = 'skhLy8uKD8yG1bW5jhXInYnfK3vqujACmLldXRZ8rAXJRAsr4wMfzj3BpgZADiPMnJ60WNJWCoN5C2s5SvVcTjycg8JbVbf8qkLP2PW2CUzy8DFh98pE4xCFG1NNmzZRbbnl5g8UcNlKc0otUWFT6T0wToAIh12qmVYXjCuUU4mwhicT4Mgn';
-
-      if (PROJECT_ID === 'YOUR_PROJECT_ID') {
-         // Using beautifully formatted mock data until project ID is updated
-         setPosts(mockArticles);
-         setIsLoading(false);
-         return;
-      }
-
-      try {
-        // Simple GROQ query to fetch posts. Assuming a basic standard schema.
-        const query = encodeURIComponent('*[_type == "post"] | order(publishedAt desc) { title, publishedAt, "category": categories[0]->title, "content": body[0].children[0].text }');
-        const url = `https://${PROJECT_ID}.api.sanity.io/v2022-03-07/data/query/${DATASET}?query=${query}`;
-        
-        const response = await fetch(url, {
-          headers: { Authorization: `Bearer ${TOKEN}` }
-        });
-        
-        if (!response.ok) throw new Error("Network response was not ok");
-        
-        const data = await response.json();
-        
-        if (data.result && data.result.length > 0) {
-          setPosts(data.result);
-        } else {
-           setPosts(mockArticles);
-        }
-      } catch (error) {
-        console.error("Sanity fetch failed. Defaulting to fallback articles.", error);
-        setPosts(mockArticles);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSanityPosts();
-  }, []);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [posts] = useState(mockArticles);
 
   if (selectedPost) {
     return <BlogPostPage post={selectedPost} onBack={() => setSelectedPost(null)} />;
@@ -3787,35 +4072,29 @@ const InsightsPage = () => {
             Market <span className="font-medium text-emerald-600">Insights</span>
           </h1>
           <p className="text-lg text-zinc-500 font-light max-w-3xl mb-12 leading-relaxed">
-            Stay ahead of the curve with our latest market analyses, economic updates, and strategic investment perspectives.
+            Stay ahead of the curve with market explainers, financial planning notes, and strategic investment perspectives.
           </p>
         </FadeIn>
 
-        {isLoading ? (
-          <div className="flex justify-center py-20">
-            <Activity className="w-8 h-8 text-emerald-500 animate-spin" />
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {posts.map((article, idx) => (
-              <FadeIn key={idx} delay={idx * 100} direction="up">
-                <div 
-                  onClick={() => setSelectedPost(article)}
-                  className="bg-white p-8 rounded-[2rem] border border-zinc-200 shadow-lg shadow-zinc-200/30 hover:border-emerald-300 transition-colors duration-300 group cursor-pointer flex flex-col h-full"
-                >
-                  <div className="flex justify-between items-center mb-6">
-                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full">{article.category}</span>
-                    <span className="text-xs text-zinc-400 font-medium">{article.date || new Date(article.publishedAt).toLocaleDateString()}</span>
-                  </div>
-                  <h3 className="text-xl font-medium text-zinc-900 mb-4 leading-snug group-hover:text-emerald-700 transition-colors">{article.title}</h3>
-                  <div className="mt-auto pt-6 flex items-center text-sm font-medium text-zinc-500 group-hover:text-emerald-600 transition-colors">
-                    Read Analysis <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                  </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {posts.map((article, idx) => (
+            <FadeIn key={idx} delay={idx * 100} direction="up">
+              <div 
+                onClick={() => setSelectedPost(article)}
+                className="bg-white p-8 rounded-[2rem] border border-zinc-200 shadow-lg shadow-zinc-200/30 hover:border-emerald-300 transition-colors duration-300 group cursor-pointer flex flex-col h-full"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full">{article.category}</span>
+                  <span className="text-xs text-zinc-400 font-medium">{article.date}</span>
                 </div>
-              </FadeIn>
-            ))}
-          </div>
-        )}
+                <h3 className="text-xl font-medium text-zinc-900 mb-4 leading-snug group-hover:text-emerald-700 transition-colors">{article.title}</h3>
+                <div className="mt-auto pt-6 flex items-center text-sm font-medium text-zinc-500 group-hover:text-emerald-600 transition-colors">
+                  Read Analysis <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </div>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
       </section>
     </div>
   );
@@ -3910,7 +4189,7 @@ const ContactPage = () => {
                     </div>
                     <div>
                       <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Phone</label>
-                      <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile" />
+                      <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value.replace(/\D/g, '')})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile" />
                     </div>
                   </div>
                   <div>
