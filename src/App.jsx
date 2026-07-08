@@ -3551,7 +3551,7 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
   return (
     <>
       {/* --- Dynamic Hero Section --- */}
-      <section   id="home"   className="relative min-h-[100svh] lg:min-h-[100dvh] pt-28 sm:pt-32 lg:pt-28 pb-16 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto flex items-center overflow-hidden bg-zinc-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]" >
+      <section id="home" className="relative min-h-[100svh] lg:min-h-[100dvh] pt-28 sm:pt-32 lg:pt-28 pb-28 sm:pb-32 lg:pb-28 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto flex items-center overflow-hidden bg-zinc-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
         {/* Soft Animated Background Orbs */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-200/30 rounded-full blur-[120px] -z-10 animate-blob"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-200/30 rounded-full blur-[100px] -z-10 animate-blob animation-delay-2000"></div>
@@ -3653,26 +3653,25 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
             </FadeIn>
           </div>
         </div>
+        {/* --- Hero Marquee Ticker --- */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 w-full bg-[#18181b] border-y border-zinc-800 py-3 overflow-hidden flex whitespace-nowrap">
+          <div className="animate-marquee flex gap-12 items-center text-[10px] sm:text-xs font-bold tracking-[0.2em] text-emerald-400/80 uppercase">
+            <span>Radical Transparency</span> <span className="text-zinc-700">•</span>
+            <span>Data-Backed Precision</span> <span className="text-zinc-700">•</span>
+            <span>Fiduciary Duty</span> <span className="text-zinc-700">•</span>
+            <span>Holistic Planning</span> <span className="text-zinc-700">•</span>
+            <span>133K Crore AUM</span> <span className="text-zinc-700">•</span>
+            <span>Market Agility</span> <span className="text-zinc-700">•</span>
+            <span>Radical Transparency</span> <span className="text-zinc-700">•</span>
+            <span>Data-Backed Precision</span> <span className="text-zinc-700">•</span>
+            <span>Fiduciary Duty</span> <span className="text-zinc-700">•</span>
+            <span>Holistic Planning</span> <span className="text-zinc-700">•</span>
+            <span>133K Crore AUM</span> <span className="text-zinc-700">•</span>
+            <span>Market Agility</span>
+          </div>
+        </div>
       </section>
 
-      {/* --- Marquee Ticker --- */}
-      <div className="w-full bg-[#18181b] border-y border-zinc-800 py-3 overflow-hidden flex whitespace-nowrap">
-         <div className="animate-marquee flex gap-12 items-center text-[10px] sm:text-xs font-bold tracking-[0.2em] text-emerald-400/80 uppercase">
-           <span>Radical Transparency</span> <span className="text-zinc-700">•</span>
-           <span>Data-Backed Precision</span> <span className="text-zinc-700">•</span>
-           <span>Fiduciary Duty</span> <span className="text-zinc-700">•</span>
-           <span>Holistic Planning</span> <span className="text-zinc-700">•</span>
-           <span>133K Crore AUM</span> <span className="text-zinc-700">•</span>
-           <span>Market Agility</span> <span className="text-zinc-700">•</span>
-           {/* Duplicate for infinite effect */}
-           <span>Radical Transparency</span> <span className="text-zinc-700">•</span>
-           <span>Data-Backed Precision</span> <span className="text-zinc-700">•</span>
-           <span>Fiduciary Duty</span> <span className="text-zinc-700">•</span>
-           <span>Holistic Planning</span> <span className="text-zinc-700">•</span>
-           <span>133K Crore AUM</span> <span className="text-zinc-700">•</span>
-           <span>Market Agility</span>
-         </div>
-      </div>
 
       {/* --- Clean Divider Stats --- */}
       <section className="bg-white py-16 lg:py-24 border-b border-zinc-200/50">
