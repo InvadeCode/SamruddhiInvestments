@@ -5,15 +5,25 @@ import {
   ArrowRight, ArrowLeft, Phone, Mail, MapPin, Activity, Check,
   Target, Zap, Users, Calculator, BookOpen, Star, 
   ArrowUpRight, BarChart3, Quote, ChevronDown, ChevronsDown, RefreshCw,
-  Download, Lock, Send
+  Download, Lock, Send, Clock, Scale, Compass, Layers
 } from 'lucide-react';
 
 // --- BACKEND API CONFIGURATION ---
-const TARGET_EMAIL = "geoconsultant@gmail.com";
-const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || "https://ask-geo.onrender.com").replace(/\/$/, "");
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-const SUPABASE_AUDIT_TABLE = import.meta.env.VITE_SUPABASE_AUDIT_TABLE || "financial_goal_audits";
+const TARGET_EMAIL = "info@samrudhiinvestments.com";
+
+// Safe fallback for environment variables that avoids import.meta errors in es2015 targets
+const getEnvVar = (key) => {
+  try {
+    return typeof process !== 'undefined' && process.env ? process.env[key] : "";
+  } catch (e) {
+    return "";
+  }
+};
+
+const BACKEND_URL = (getEnvVar("VITE_BACKEND_URL") || getEnvVar("REACT_APP_BACKEND_URL") || "https://samrudhi-backend.onrender.com").replace(/\/$/, "");
+const SUPABASE_URL = getEnvVar("VITE_SUPABASE_URL") || getEnvVar("REACT_APP_SUPABASE_URL") || "";
+const SUPABASE_ANON_KEY = getEnvVar("VITE_SUPABASE_ANON_KEY") || getEnvVar("REACT_APP_SUPABASE_ANON_KEY") || "";
+const SUPABASE_AUDIT_TABLE = getEnvVar("VITE_SUPABASE_AUDIT_TABLE") || getEnvVar("REACT_APP_SUPABASE_AUDIT_TABLE") || "samrudhi_financial_audits";
 
 const fetchWithTimeout = async (url, options = {}, timeout = 60000) => {
   const controller = new AbortController();
@@ -108,7 +118,7 @@ const sendEmailViaBackend = async (subject, htmlBody, attachments = [], to = TAR
     }
   }
 
-  throw new Error("HTTP Error: 404. Both endpoints failed. Please make sure your updated backend code is fully deployed on Render.");
+  throw new Error("HTTP Error: 404. Both endpoints failed. Please make sure your backend code is fully deployed.");
 };
 
 const normalizeEmailText = (value = '') => escapeHtml(String(value ?? ''))
@@ -116,28 +126,25 @@ const normalizeEmailText = (value = '') => escapeHtml(String(value ?? ''))
   .replace(/\n/g, '<br/>');
 
 const getBeautifulEmailTemplate = (title, leadData = {}, metrics = []) => {
-  const safeTitle = escapeHtml(title || 'Ask Geo Lead');
+  const safeTitle = escapeHtml(title || 'Samruddhi Lead');
   const safeName = escapeHtml(leadData.name || 'N/A');
   const safePhone = leadData.phone ? `+91 ${escapeHtml(leadData.phone)}` : 'N/A';
   const safeEmail = escapeHtml(leadData.email || 'N/A');
   const safeMessage = leadData.message ? normalizeEmailText(leadData.message) : '';
   const generatedAt = new Date().toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   });
 
   return `
   <div style="margin:0; padding:0; background:#f4f4f5; font-family:Inter, Helvetica, Arial, sans-serif; color:#18181b;">
     <div style="max-width:680px; margin:0 auto; padding:28px 14px;">
       <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:22px; overflow:hidden; box-shadow:0 20px 50px rgba(15,23,42,0.08);">
-        <div style="background:#047857; padding:34px 34px 30px; color:#ffffff;">
-          <div style="display:inline-block; background:#ffffff; color:#047857; padding:7px 12px; border-radius:9px; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:22px;">Ask Geo</div>
-          <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#a7f3d0; font-weight:800; margin-bottom:8px;">${safeTitle}</div>
+        <div style="background:#1d4ed8; padding:34px 34px 30px; color:#ffffff;">
+          <div style="display:inline-block; background:#ffffff; color:#1d4ed8; padding:7px 12px; border-radius:9px; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:22px;">Samruddhi Investments</div>
+          <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#bfdbfe; font-weight:800; margin-bottom:8px;">${safeTitle}</div>
           <h1 style="margin:0; font-size:28px; line-height:1.15; font-weight:400; letter-spacing:-0.8px; color:#ffffff;">New Financial Planning Interaction</h1>
-          <p style="margin:12px 0 0; color:#d1fae5; font-size:13px; line-height:1.6;">A user has submitted details through the Ask Geo website. The contact information, generated metrics, and PDF report are attached below where applicable.</p>
+          <p style="margin:12px 0 0; color:#dbeafe; font-size:13px; line-height:1.6;">A user has submitted details through the Samruddhi website. The contact information, generated metrics, and PDF report are attached below where applicable.</p>
         </div>
 
         <div style="padding:30px 34px;">
@@ -167,12 +174,12 @@ const getBeautifulEmailTemplate = (title, leadData = {}, metrics = []) => {
             <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:separate; border-spacing:0; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden; margin-bottom:22px;">
               ${metrics.map((m, index) => `
                 <tr>
-                  <td style="width:52%; padding:15px 16px; border-bottom:${index === metrics.length - 1 ? '0' : '1px solid #e5e7eb'}; background:${m.success ? '#ecfdf5' : '#ffffff'}; color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.7px;">${escapeHtml(m.label)}</td>
-                  <td style="padding:15px 16px; border-bottom:${index === metrics.length - 1 ? '0' : '1px solid #e5e7eb'}; background:${m.success ? '#ecfdf5' : '#ffffff'}; color:${m.success ? '#047857' : '#111827'}; font-size:16px; font-weight:800;">${escapeHtml(m.value)}</td>
+                  <td style="width:52%; padding:15px 16px; border-bottom:${index === metrics.length - 1 ? '0' : '1px solid #e5e7eb'}; background:${m.success ? '#eff6ff' : '#ffffff'}; color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.7px;">${escapeHtml(m.label)}</td>
+                  <td style="padding:15px 16px; border-bottom:${index === metrics.length - 1 ? '0' : '1px solid #e5e7eb'}; background:${m.success ? '#eff6ff' : '#ffffff'}; color:${m.success ? '#1d4ed8' : '#111827'}; font-size:16px; font-weight:800;">${escapeHtml(m.value)}</td>
                 </tr>
               `).join('')}
             </table>
-            <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:14px; padding:16px; color:#064e3b; font-size:13px; line-height:1.55; margin-bottom:26px;">
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:14px; padding:16px; color:#1e3a8a; font-size:13px; line-height:1.55; margin-bottom:26px;">
               The detailed PDF report is attached to this email. The report uses educational projections only and avoids specific stock, mutual fund scheme, or insurance product recommendations.
             </div>
           ` : ''}
@@ -183,7 +190,7 @@ const getBeautifulEmailTemplate = (title, leadData = {}, metrics = []) => {
         </div>
 
         <div style="background:#111827; padding:20px 30px; color:#a1a1aa; font-size:11px; letter-spacing:.8px; text-transform:uppercase; text-align:center;">
-          Ask Geo Automated Planning System<br/>
+          Samruddhi Automated Planning System<br/>
           <span style="color:#71717a; font-weight:400; text-transform:none; letter-spacing:0; display:inline-block; margin-top:5px;">Generated on ${generatedAt}</span>
         </div>
       </div>
@@ -192,10 +199,9 @@ const getBeautifulEmailTemplate = (title, leadData = {}, metrics = []) => {
 };
 
 // --- SEO & GEO & AIO HOOK ---
-// Dynamically updates Meta Tags and JSON-LD Structured Data for AI Overviews and Google
 const useSEO = (title, description, path = '') => {
   useEffect(() => {
-    document.title = `${title} | Ask Geo Financial Services`;
+    document.title = `${title} | Samruddhi Investments`;
     
     let metaDesc = document.querySelector('meta[name="description"]');
     if (!metaDesc) {
@@ -205,34 +211,27 @@ const useSEO = (title, description, path = '') => {
     }
     metaDesc.content = description;
 
-    // Remove existing structured data to avoid duplication
     const existingSchema = document.querySelector('#schema-ld');
     if (existingSchema) {
       existingSchema.remove();
     }
 
-    // Inject rich Structured Data for Search Engines & AI Overviews
     const schema = {
       "@context": "https://schema.org",
       "@type": "FinancialService",
-      "name": "Ask Geo Financial Services",
-      "url": `https://askgeo.in/${path}`,
-      "logo": "https://static.wixstatic.com/media/548938_d02490efa777416caf274ba6f2482d6e~mv2.png",
+      "name": "Samruddhi Investments",
+      "url": `https://samrudhiinvestments.com/${path}`,
       "description": description,
       "address": {
         "@type": "PostalAddress",
-        "streetAddress": "Jai Ganesh Vision, B Wing, BR-2, Office No. 319",
-        "addressLocality": "Akurdi, Pune",
-        "postalCode": "411035",
+        "streetAddress": "Financial Hub",
+        "addressLocality": "Pune",
+        "postalCode": "411001",
         "addressCountry": "IN"
       },
-      "telephone": "+919960624271",
+      "telephone": "+919876543210",
       "priceRange": "$$",
-      "areaServed": "India",
-      "founder": {
-        "@type": "Person",
-        "name": "Geo Thomas"
-      }
+      "areaServed": "India"
     };
 
     const script = document.createElement('script');
@@ -324,12 +323,12 @@ const AnimatedNumber = ({ end, suffix = "", prefix = "", decimals = 0, duration 
   );
 };
 
-// --- STRICT FLAT BUTTON COMPONENT (NO UPWARD ANIMATION) ---
-const GeoButton = ({ children, onClick, type = "button", disabled = false, className = "", wFull = false, icon: Icon, variant = "dark" }) => {
+// --- BRAND BUTTON COMPONENT ---
+const BrandButton = ({ children, onClick, type = "button", disabled = false, className = "", wFull = false, icon: Icon, variant = "dark" }) => {
   const isLight = variant === 'light';
   const baseClasses = isLight 
     ? 'bg-white text-zinc-900 border border-zinc-200 shadow-xl shadow-white/5' 
-    : 'bg-[#18181b] text-white shadow-lg shadow-zinc-900/10 hover:shadow-emerald-900/20';
+    : 'bg-[#18181b] text-white shadow-lg shadow-zinc-900/10 hover:shadow-blue-900/20';
 
   return (
     <button
@@ -342,8 +341,7 @@ const GeoButton = ({ children, onClick, type = "button", disabled = false, class
         {children}
         {Icon && <Icon className={`w-4 h-4 ml-1 transition-transform duration-300 group-hover:translate-x-1`} strokeWidth={2.5} />}
       </span>
-      {/* Left to right emerald fill. Strict origin-left scaling. */}
-      <div className="absolute inset-0 bg-emerald-600 transform scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-500 ease-out z-0"></div>
+      <div className="absolute inset-0 bg-blue-600 transform scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-500 ease-out z-0"></div>
     </button>
   );
 };
@@ -369,17 +367,9 @@ const GeneralContactModal = ({ isOpen, onClose, title }) => {
 
     try {
       const emailHtml = getBeautifulEmailTemplate(title, formData);
-
-      await sendEmailViaBackend(
-        `New Ask Geo Lead: ${title} - ${formData.name}`,
-        emailHtml
-      );
-
+      await sendEmailViaBackend(`New Samruddhi Lead: ${title} - ${formData.name}`, emailHtml);
       setIsSuccess(true);
-
-      setTimeout(() => {
-        onClose();
-      }, 2000);
+      setTimeout(() => onClose(), 2000);
     } catch (error) {
       console.error("General contact email failed:", error);
       alert(`Email failed: ${error.message}`);
@@ -392,11 +382,11 @@ const GeneralContactModal = ({ isOpen, onClose, title }) => {
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 text-left">
       <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" onClick={onClose}></div>
       <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
-        <div className="bg-emerald-600 px-8 py-6 flex justify-between items-center relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/30 rounded-full blur-2xl pointer-events-none"></div>
+        <div className="bg-blue-600 px-8 py-6 flex justify-between items-center relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/30 rounded-full blur-2xl pointer-events-none"></div>
            <div>
              <h3 className="text-white text-lg font-medium tracking-tight">{title}</h3>
-             <p className="text-emerald-100 text-[10px] font-medium tracking-widest uppercase mt-1">Provide your details</p>
+             <p className="text-blue-100 text-[10px] font-medium tracking-widest uppercase mt-1">Provide your details</p>
            </div>
            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors">
              <X className="w-4 h-4" />
@@ -405,7 +395,7 @@ const GeneralContactModal = ({ isOpen, onClose, title }) => {
         <div className="p-8">
           {isSuccess ? (
             <div className="flex flex-col items-center justify-center py-8 text-center animate-in zoom-in duration-300">
-               <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-emerald-100/50">
+               <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-blue-100/50">
                  <Check className="w-8 h-8" strokeWidth={2} />
                </div>
                <h4 className="text-xl font-medium text-zinc-900 mb-2">Request Received</h4>
@@ -415,22 +405,22 @@ const GeneralContactModal = ({ isOpen, onClose, title }) => {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Full Name</label>
-                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="e.g. Rajesh Sharma" />
+                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="e.g. Rajesh Sharma" />
               </div>
               <div>
                 <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Phone Number</label>
                 <div className="flex">
                   <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-zinc-200 bg-zinc-100 text-zinc-500 text-sm font-medium">+91</span>
-                  <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value.replace(/\D/g, '')})} className="w-full px-4 py-3 rounded-r-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile number" />
+                  <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value.replace(/\D/g, '')})} className="w-full px-4 py-3 rounded-r-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile number" />
                 </div>
               </div>
               <div>
                 <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Email Address</label>
-                <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="you@example.com" />
+                <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="you@example.com" />
               </div>
-              <GeoButton type="submit" disabled={isProcessing} className="mt-4 !py-3" wFull icon={isProcessing ? Activity : ArrowRight}>
+              <BrandButton type="submit" disabled={isProcessing} className="mt-4 !py-3" wFull icon={isProcessing ? Activity : ArrowRight}>
                 {isProcessing ? 'Submitting...' : 'Continue'}
-              </GeoButton>
+              </BrandButton>
             </form>
           )}
         </div>
@@ -442,8 +432,7 @@ const GeneralContactModal = ({ isOpen, onClose, title }) => {
 // --- CALCULATOR WIDGETS ---
 const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
 
-
-// --- ASK GEO AI AUDIT + RESPONSIBLE PLANNING ENGINE ---
+// --- SAMRUDDHI AI AUDIT + RESPONSIBLE PLANNING ENGINE ---
 const toNumber = (value) => {
   const parsed = Number(String(value ?? '').replace(/,/g, ''));
   return Number.isFinite(parsed) ? parsed : 0;
@@ -642,7 +631,7 @@ const AuditInput = ({ label, children }) => (
   </div>
 );
 
-const inputClass = "w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white";
+const inputClass = "w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white";
 const selectClass = inputClass;
 
 const escapeHtml = (value) => String(value ?? '')
@@ -653,8 +642,8 @@ const escapeHtml = (value) => String(value ?? '')
   .replace(/'/g, '&#039;');
 
 const getAuditReportFilename = (form) => {
-  const cleanName = (form.name || 'AskGeo-Client').trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
-  return `AskGeo-Financial-Goal-Audit-${cleanName || 'Client'}.pdf`;
+  const cleanName = (form.name || 'Samruddhi-Client').trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
+  return `Samruddhi-Financial-Goal-Audit-${cleanName || 'Client'}.pdf`;
 };
 
 const downloadDataUri = (dataUri, filename) => {
@@ -722,30 +711,30 @@ const addWrappedPdfText = (pdf, text, x, y, maxWidth, lineHeight = 5) => {
 
 const getAuditPdfMarkup = (form, result) => {
   const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
-  const refId = `AG-AUDIT-${Math.floor(100000 + Math.random() * 900000)}`;
+  const refId = `SI-AUDIT-${Math.floor(100000 + Math.random() * 900000)}`;
   const goals = result.goalRows || [];
   const projections = result.projectionRows || [];
   const directions = result.allocationDirection || [];
 
   return `
     <div id="audit-pdf-content" style="width:210mm; min-height:297mm; background:#ffffff; color:#18181b; font-family:Inter, Helvetica, Arial, sans-serif; box-sizing:border-box; padding:0;">
-      <div style="background:#047857; color:#ffffff; padding:38px 44px;">
-        <div style="background:#ffffff; padding:7px 12px; border-radius:8px; display:inline-flex; align-items:center; margin-bottom:24px;">
-          <img src="https://static.wixstatic.com/media/548938_d02490efa777416caf274ba6f2482d6e~mv2.png" alt="Ask Geo" style="height:28px; width:auto; object-fit:contain;" />
+      <div style="background:#1d4ed8; color:#ffffff; padding:38px 44px;">
+        <div style="background:#ffffff; padding:7px 12px; border-radius:8px; display:inline-flex; align-items:center; margin-bottom:24px; color:#1d4ed8; font-weight:bold; font-size:16px;">
+          SAMRUDDHI
         </div>
-        <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#a7f3d0; font-weight:700; margin-bottom:8px;">Financial Goal Audit</div>
+        <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#bfdbfe; font-weight:700; margin-bottom:8px;">Financial Goal Audit</div>
         <h1 style="font-size:34px; line-height:1.08; font-weight:300; letter-spacing:-1px; margin:0 0 14px;">Personal Financial Discovery Report</h1>
-        <p style="font-size:13px; line-height:1.6; color:#d1fae5; max-width:620px; margin:0;">This report summarises the information submitted by the client and converts it into a financial snapshot, risk profile, suitability view, goal map, and scenario-based projection.</p>
+        <p style="font-size:13px; line-height:1.6; color:#dbeafe; max-width:620px; margin:0;">This report summarises the information submitted by the client and converts it into a financial snapshot, risk profile, suitability view, goal map, and scenario-based projection.</p>
         <div style="display:flex; justify-content:space-between; border-top:1px solid rgba(255,255,255,.22); margin-top:24px; padding-top:18px; gap:24px;">
           <div>
-            <div style="font-size:9px; letter-spacing:1px; text-transform:uppercase; color:#d1fae5; margin-bottom:5px;">Prepared For</div>
+            <div style="font-size:9px; letter-spacing:1px; text-transform:uppercase; color:#dbeafe; margin-bottom:5px;">Prepared For</div>
             <div style="font-size:15px; font-weight:600;">${escapeHtml(form.name || 'Website Visitor')}</div>
-            <div style="font-size:11px; color:#d1fae5; margin-top:4px;">${escapeHtml(form.email || '')}</div>
+            <div style="font-size:11px; color:#dbeafe; margin-top:4px;">${escapeHtml(form.email || '')}</div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:9px; letter-spacing:1px; text-transform:uppercase; color:#d1fae5; margin-bottom:5px;">Date</div>
+            <div style="font-size:9px; letter-spacing:1px; text-transform:uppercase; color:#dbeafe; margin-bottom:5px;">Date</div>
             <div style="font-size:14px; font-weight:600;">${today}</div>
-            <div style="font-size:11px; color:#d1fae5; margin-top:4px;">Ref: ${refId}</div>
+            <div style="font-size:11px; color:#dbeafe; margin-top:4px;">Ref: ${refId}</div>
           </div>
         </div>
       </div>
@@ -770,9 +759,9 @@ const getAuditPdfMarkup = (form, result) => {
           `).join('')}
         </div>
 
-        <div style="border:1px solid #d1fae5; background:#ecfdf5; border-radius:18px; padding:20px; margin-bottom:24px;">
-          <div style="font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#047857; font-weight:800; margin-bottom:8px;">Suitability Summary</div>
-          <div style="font-size:13px; color:#064e3b; line-height:1.65;">Your current profile suggests a <strong>${escapeHtml(result.riskProfile)}</strong> risk profile. The first priority is suitability: emergency fund, insurance readiness, debt pressure, and investment horizon should be reviewed before any market-linked strategy is executed.</div>
+        <div style="border:1px solid #bfdbfe; background:#eff6ff; border-radius:18px; padding:20px; margin-bottom:24px;">
+          <div style="font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#1d4ed8; font-weight:800; margin-bottom:8px;">Suitability Summary</div>
+          <div style="font-size:13px; color:#1e3a8a; line-height:1.65;">Your current profile suggests a <strong>${escapeHtml(result.riskProfile)}</strong> risk profile. The first priority is suitability: emergency fund, insurance readiness, debt pressure, and investment horizon should be reviewed before any market-linked strategy is executed.</div>
         </div>
 
         <h2 style="font-size:19px; font-weight:400; margin:0 0 12px; color:#18181b;">Goal Conversion</h2>
@@ -792,7 +781,7 @@ const getAuditPdfMarkup = (form, result) => {
                 <td style="padding:10px; border:1px solid #e5e7eb; font-weight:600;">${escapeHtml(goal.goal)}</td>
                 <td style="padding:10px; border:1px solid #e5e7eb;">${escapeHtml(goal.target)}</td>
                 <td style="padding:10px; border:1px solid #e5e7eb;">${escapeHtml(goal.horizon)}</td>
-                <td style="padding:10px; border:1px solid #e5e7eb; color:#047857; font-weight:600;">${escapeHtml(goal.monthly)}</td>
+                <td style="padding:10px; border:1px solid #e5e7eb; color:#1d4ed8; font-weight:600;">${escapeHtml(goal.monthly)}</td>
                 <td style="padding:10px; border:1px solid #e5e7eb;">${escapeHtml(goal.priority)}</td>
               </tr>
             `).join('') : `<tr><td colspan="5" style="padding:12px; border:1px solid #e5e7eb; color:#71717a;">No goal map generated.</td></tr>`}
@@ -815,7 +804,7 @@ const getAuditPdfMarkup = (form, result) => {
                 <td style="padding:10px; border:1px solid #e5e7eb; font-weight:600;">${row.years} years</td>
                 <td style="padding:10px; border:1px solid #e5e7eb;">${formatCurrency(row.conservative)} approx.</td>
                 <td style="padding:10px; border:1px solid #e5e7eb;">${formatCurrency(row.balanced)} approx.</td>
-                <td style="padding:10px; border:1px solid #e5e7eb; color:#047857; font-weight:600;">${formatCurrency(row.growth)} approx.</td>
+                <td style="padding:10px; border:1px solid #e5e7eb; color:#1d4ed8; font-weight:600;">${formatCurrency(row.growth)} approx.</td>
               </tr>
             `).join('')}
           </tbody>
@@ -833,7 +822,7 @@ const getAuditPdfMarkup = (form, result) => {
             ['12-Month Plan', 'Review progress, rebalance broad allocation, and increase SIP capacity only if cash flow and safety cover allow it.'],
           ].map(([title, copy]) => `
             <div style="background:#18181b; color:#ffffff; border-radius:14px; padding:16px;">
-              <div style="font-size:8px; text-transform:uppercase; letter-spacing:1px; color:#6ee7b7; font-weight:800; margin-bottom:8px;">${title}</div>
+              <div style="font-size:8px; text-transform:uppercase; letter-spacing:1px; color:#93c5fd; font-weight:800; margin-bottom:8px;">${title}</div>
               <div style="font-size:11px; line-height:1.6; color:#d4d4d8;">${copy}</div>
             </div>
           `).join('')}
@@ -856,14 +845,14 @@ const createAuditPdfDataUri = async (form, result) => {
   const pageWidth = 210;
   const pageHeight = 297;
   const marginX = 14;
-  const green = [4, 120, 87];
-  const lightGreen = [236, 253, 245];
+  const primaryColor = [29, 78, 216]; // blue-700
+  const lightPrimary = [239, 246, 255]; // blue-50
   const zinc = [24, 24, 27];
   const muted = [82, 82, 91];
   const border = [229, 231, 235];
 
   const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
-  const refId = `AG-AUDIT-${Math.floor(100000 + Math.random() * 900000)}`;
+  const refId = `SI-AUDIT-${Math.floor(100000 + Math.random() * 900000)}`;
 
   const addFooter = () => {
     pdf.setDrawColor(...border);
@@ -876,23 +865,23 @@ const createAuditPdfDataUri = async (form, result) => {
       marginX,
       288
     );
-    pdf.text(safePdfText('Ask Geo Financial Services'), pageWidth - marginX, 288, { align: 'right' });
+    pdf.text(safePdfText('Samruddhi Investments'), pageWidth - marginX, 288, { align: 'right' });
   };
 
   const addHeader = () => {
-    pdf.setFillColor(...green);
+    pdf.setFillColor(...primaryColor);
     pdf.rect(0, 0, pageWidth, 78, 'F');
 
     pdf.setFillColor(255, 255, 255);
     pdf.roundedRect(marginX, 13, 31, 12, 2, 2, 'F');
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(8);
-    pdf.setTextColor(...green);
-    pdf.text('ASK GEO', marginX + 6, 21);
+    pdf.setTextColor(...primaryColor);
+    pdf.text('SAMRUDDHI', marginX + 3, 21);
 
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(8);
-    pdf.setTextColor(167, 243, 208);
+    pdf.setTextColor(191, 219, 254);
     pdf.text('FINANCIAL GOAL AUDIT', marginX, 39);
 
     pdf.setFont('helvetica', 'normal');
@@ -901,7 +890,7 @@ const createAuditPdfDataUri = async (form, result) => {
     pdf.text('Personal Financial Discovery Report', marginX, 52);
 
     pdf.setFontSize(9.5);
-    pdf.setTextColor(209, 250, 229);
+    pdf.setTextColor(219, 234, 254);
     addWrappedPdfText(
       pdf,
       'This report summarises the information submitted by the client and converts it into a financial snapshot, risk profile, suitability view, goal map, and scenario-based projection.',
@@ -917,7 +906,7 @@ const createAuditPdfDataUri = async (form, result) => {
 
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(7);
-    pdf.setTextColor(209, 250, 229);
+    pdf.setTextColor(219, 234, 254);
     pdf.text('PREPARED FOR', marginX, 73);
     pdf.text('DATE', pageWidth - marginX, 73, { align: 'right' });
 
@@ -928,7 +917,7 @@ const createAuditPdfDataUri = async (form, result) => {
   };
 
   const metricCard = (x, y, w, h, label, value, accent = false) => {
-    pdf.setFillColor(accent ? lightGreen[0] : 249, accent ? lightGreen[1] : 250, accent ? lightGreen[2] : 251);
+    pdf.setFillColor(accent ? lightPrimary[0] : 249, accent ? lightPrimary[1] : 250, accent ? lightPrimary[2] : 251);
     pdf.setDrawColor(...border);
     pdf.roundedRect(x, y, w, h, 3, 3, 'FD');
 
@@ -939,7 +928,7 @@ const createAuditPdfDataUri = async (form, result) => {
 
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(11);
-    pdf.setTextColor(...(accent ? green : zinc));
+    pdf.setTextColor(...(accent ? primaryColor : zinc));
     const lines = pdf.splitTextToSize(safePdfText(value), w - 8);
     pdf.text(lines.slice(0, 2), x + 4, y + 13);
   };
@@ -1032,18 +1021,18 @@ const createAuditPdfDataUri = async (form, result) => {
 
   y += 3 * (cardH + gap) + 4;
 
-  pdf.setFillColor(...lightGreen);
-  pdf.setDrawColor(209, 250, 229);
+  pdf.setFillColor(...lightPrimary);
+  pdf.setDrawColor(219, 234, 254);
   pdf.roundedRect(marginX, y, pageWidth - marginX * 2, 28, 4, 4, 'FD');
 
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7);
-  pdf.setTextColor(...green);
+  pdf.setTextColor(...primaryColor);
   pdf.text('SUITABILITY SUMMARY', marginX + 5, y + 7);
 
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8.6);
-  pdf.setTextColor(6, 78, 59);
+  pdf.setTextColor(30, 58, 138);
   addWrappedPdfText(
     pdf,
     `Your current profile suggests a ${result.riskProfile} risk profile. The first priority is suitability: emergency fund, insurance readiness, debt pressure, and investment horizon should be reviewed before any market-linked strategy is executed.`,
@@ -1118,7 +1107,7 @@ const createAuditPdfDataUri = async (form, result) => {
       pdf.addPage();
       y = 18;
     }
-    pdf.setFillColor(...green);
+    pdf.setFillColor(...primaryColor);
     pdf.circle(marginX + 1.5, y - 1.5, 1.2, 'F');
     y = addWrappedPdfText(pdf, item, marginX + 6, y, 174, 4.8) + 2;
   });
@@ -1207,7 +1196,7 @@ const saveAuditSubmissionToSupabase = async (form, result) => {
     geo_email: TARGET_EMAIL,
     disclaimer_accepted: true,
     consent_to_contact: true,
-    source: 'AskGeo Website',
+    source: 'Samruddhi Website',
     source_page: 'Tools - Goal Audit',
     user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
   };
@@ -1379,34 +1368,29 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
     try {
       const latestResult = analyseFinancialAudit(form);
 
-      // 1. Store answers in Supabase first. If this fails, stop.
       await saveAuditSubmissionToSupabase(form, latestResult);
 
-      // 2. Generate the same PDF for email + download.
       const filename = getAuditReportFilename(form);
       const pdfDataUri = await createAuditPdfDataUri(form, latestResult);
       const attachments = [{ filename, dataUri: pdfDataUri, contentType: 'application/pdf' }];
       const html = getAuditEmailHtml(form, latestResult);
 
-      // 3. Email Geo and the client.
       await sendEmailViaBackend(
-        `Ask Geo Financial Goal Audit - ${form.name || 'New Lead'}`,
+        `Samruddhi Financial Goal Audit - ${form.name || 'New Lead'}`,
         html,
         attachments,
         TARGET_EMAIL
       );
 
       await sendEmailViaBackend(
-        'Your Ask Geo Financial Goal Audit Report',
+        'Your Samruddhi Financial Goal Audit Report',
         html,
         attachments,
         form.email.trim()
       );
 
-      // 4. Download the PDF for the user.
       downloadDataUri(pdfDataUri, filename);
 
-      // 5. Show the report only after storage + email + download all complete.
       setSubmitted(true);
     } catch (error) {
       console.error('Audit submission failed:', error);
@@ -1427,16 +1411,16 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
         <FadeIn direction="up">
           <div className="bg-white border border-zinc-200/70 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-zinc-200/50">
             <div className="bg-zinc-950 text-white p-8 sm:p-10 lg:p-12 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-[280px] h-[280px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/25 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
+              <div className="absolute top-0 right-0 w-[280px] h-[280px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-500/25 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
               <div className="relative z-10 max-w-4xl">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10 text-emerald-200 text-[10px] font-bold tracking-widest uppercase mb-6">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10 text-blue-200 text-[10px] font-bold tracking-widest uppercase mb-6">
                   <Sparkles className="w-4 h-4" /> Financial Discovery Report
                 </div>
                 <h2 className="text-3xl sm:text-5xl lg:text-6xl font-light tracking-tighter leading-[1.05] mb-5">
                   {result.clientType}
                 </h2>
                 <p className="text-zinc-300 font-light text-base sm:text-lg leading-relaxed max-w-3xl">
-                  Your current profile suggests a <span className="text-emerald-300 font-medium">{result.riskProfile}</span> risk profile. The first priority is suitability: safety, emergency fund, debt pressure, and insurance readiness should be reviewed before any market-linked strategy is executed.
+                  Your current profile suggests a <span className="text-blue-300 font-medium">{result.riskProfile}</span> risk profile. The first priority is suitability: safety, emergency fund, debt pressure, and insurance readiness should be reviewed before any market-linked strategy is executed.
                 </p>
               </div>
             </div>
@@ -1461,12 +1445,12 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
               </div>
 
               <div className="grid lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-4 bg-emerald-50 border border-emerald-100 rounded-[2rem] p-6">
-                  <p className="text-[10px] font-bold tracking-widest uppercase text-emerald-700 mb-3">Financial Health Score</p>
-                  <p className="text-6xl font-light tracking-tighter text-emerald-700 mb-4">{result.financialHealthScore}<span className="text-2xl text-emerald-500">/100</span></p>
-                  <div className="space-y-2 text-sm text-emerald-950 font-light">
+                <div className="lg:col-span-4 bg-blue-50 border border-blue-100 rounded-[2rem] p-6">
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-blue-700 mb-3">Financial Health Score</p>
+                  <p className="text-6xl font-light tracking-tighter text-blue-700 mb-4">{result.financialHealthScore}<span className="text-2xl text-blue-500">/100</span></p>
+                  <div className="space-y-2 text-sm text-blue-950 font-light">
                     {Object.entries(result.healthScoreBreakup).map(([key, score]) => (
-                      <div key={key} className="flex justify-between gap-3 border-b border-emerald-100 pb-2 last:border-0">
+                      <div key={key} className="flex justify-between gap-3 border-b border-blue-100 pb-2 last:border-0">
                         <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
                         <span className="font-medium">{score}</span>
                       </div>
@@ -1480,7 +1464,7 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
                     <h3 className="text-2xl sm:text-3xl font-light text-zinc-950">{result.riskProfile}</h3>
                     <div className="text-right">
                       <p className="text-[10px] font-bold tracking-widest uppercase text-zinc-400">Risk Score</p>
-                      <p className="text-2xl font-light text-emerald-600">{result.riskScore}/100</p>
+                      <p className="text-2xl font-light text-blue-600">{result.riskScore}/100</p>
                     </div>
                   </div>
                   <p className="text-sm text-zinc-600 font-light leading-relaxed mb-5">
@@ -1489,7 +1473,7 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
                   <div className="grid sm:grid-cols-2 gap-3">
                     {result.allocationDirection.map((item, index) => (
                       <div key={index} className="flex gap-3 bg-zinc-50 border border-zinc-100 rounded-xl p-4 text-sm text-zinc-700 font-light">
-                        <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <Check className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                         <span>{item}</span>
                       </div>
                     ))}
@@ -1522,8 +1506,8 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
                           <td className="p-4 text-zinc-900 font-medium">{goal.goal}</td>
                           <td className="p-4 text-zinc-700">{goal.target}</td>
                           <td className="p-4 text-zinc-700">{goal.horizon}</td>
-                          <td className="p-4 text-emerald-700 font-medium">{goal.monthly}</td>
-                          <td className="p-4"><span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium">{goal.priority}</span></td>
+                          <td className="p-4 text-blue-700 font-medium">{goal.monthly}</td>
+                          <td className="p-4"><span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">{goal.priority}</span></td>
                         </tr>
                       )) : (
                         <tr><td className="p-4 text-zinc-500" colSpan="5">Add a goal and target amount to generate a clearer goal map.</td></tr>
@@ -1552,7 +1536,7 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
                           <td className="p-4 text-zinc-900 font-medium">{row.years} years</td>
                           <td className="p-4 text-zinc-700">{formatCurrency(row.conservative)} approx.</td>
                           <td className="p-4 text-zinc-700">{formatCurrency(row.balanced)} approx.</td>
-                          <td className="p-4 text-emerald-700 font-medium">{formatCurrency(row.growth)} approx.</td>
+                          <td className="p-4 text-blue-700 font-medium">{formatCurrency(row.growth)} approx.</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1567,24 +1551,24 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
                 {[
                   ['30-Day Plan', 'Document income, expenses, EMIs, insurance, and emergency fund. Define the first goal with a realistic amount.'],
                   ['90-Day Plan', 'Complete protection gaps, build emergency savings, reduce high-pressure debt, and start only suitable investment buckets.'],
-                  ['12-Month Plan', 'Review progress, rebalance broad allocation, increase SIP capacity if income and emergency cover allow it.'],
+                  ['12-Month Plan', 'Review progress, rebalance broad allocation, and increase SIP capacity only if cash flow and safety cover allow it.'],
                 ].map(([title, copy]) => (
                   <div key={title} className="bg-zinc-950 text-white rounded-2xl p-6">
-                    <p className="text-emerald-300 text-[10px] font-bold tracking-widest uppercase mb-3">{title}</p>
+                    <p className="text-blue-300 text-[10px] font-bold tracking-widest uppercase mb-3">{title}</p>
                     <p className="text-sm text-zinc-300 font-light leading-relaxed">{copy}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="bg-emerald-50 border border-emerald-100 rounded-[2rem] p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="bg-blue-50 border border-blue-100 rounded-[2rem] p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div>
                   <h3 className="text-2xl sm:text-3xl font-light tracking-tight text-zinc-950 mb-2">Your money has a direction now.</h3>
                   <p className="text-zinc-600 font-light">Book a session to convert this plan into a clear investment strategy.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <GeoButton onClick={() => openContactModal ? openContactModal('Goal Planning Session') : null} icon={ArrowRight}>
+                  <BrandButton onClick={() => openContactModal ? openContactModal('Goal Planning Session') : null} icon={ArrowRight}>
                     Book a Goal Planning Session
-                  </GeoButton>
+                  </BrandButton>
                   <button onClick={resetAudit} className="px-6 py-4 rounded-xl border border-zinc-200 bg-white text-zinc-700 text-sm font-medium hover:bg-zinc-50 transition-colors">
                     Edit Answers
                   </button>
@@ -1602,9 +1586,9 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
       <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 lg:items-stretch">
         <FadeIn direction="left" className="lg:col-span-4 h-full">
           <div className="bg-zinc-950 text-white rounded-[2rem] p-8 lg:p-10 lg:sticky lg:top-28 overflow-hidden h-full lg:min-h-[760px]">
-            <div className="absolute top-0 right-0 w-[220px] h-[220px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/25 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-[220px] h-[220px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-500/25 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
             <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10 text-emerald-200 text-[10px] font-bold tracking-widest uppercase mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10 text-blue-200 text-[10px] font-bold tracking-widest uppercase mb-6">
                 <ShieldCheck className="w-4 h-4" /> Goal Audit
               </div>
               <h2 className="text-3xl sm:text-4xl font-light tracking-tighter mb-4">Personal Financial Goal Discovery</h2>
@@ -1618,10 +1602,10 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
                     type="button"
                     onClick={() => setStep(index)}
                     className={`w-full flex items-center gap-3 text-left p-4 rounded-xl border transition-colors ${
-                      step === index ? 'bg-emerald-500/15 border-emerald-400/30 text-white' : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
+                      step === index ? 'bg-blue-500/15 border-blue-400/30 text-white' : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
                     }`}
                   >
-                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${step === index ? 'bg-emerald-500 text-white' : 'bg-white/10 text-zinc-400'}`}>{index + 1}</span>
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${step === index ? 'bg-blue-600 text-white' : 'bg-white/10 text-zinc-400'}`}>{index + 1}</span>
                     <span className="text-sm font-medium">{label}</span>
                   </button>
                 ))}
@@ -1633,7 +1617,7 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
         <FadeIn direction="up" delay={100} className="lg:col-span-8 h-full">
           <form onSubmit={handleSubmit} className="bg-white border border-zinc-200/70 rounded-[2.5rem] p-6 sm:p-10 lg:p-12 shadow-2xl shadow-zinc-200/50 h-full lg:min-h-[760px] flex flex-col">
             <div className="mb-8">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-emerald-600 mb-2">Step {step + 1} of {steps.length}</p>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-blue-600 mb-2">Step {step + 1} of {steps.length}</p>
               <h3 className="text-2xl sm:text-4xl font-light tracking-tight text-zinc-950">{steps[step]}</h3>
             </div>
 
@@ -1732,7 +1716,7 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
                         key={goal}
                         onClick={() => toggleGoal(goal)}
                         className={`p-4 rounded-xl border text-left text-sm transition-colors ${
-                          form.topGoals.includes(goal) ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-white'
+                          form.topGoals.includes(goal) ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-white'
                         }`}
                       >
                         {goal}
@@ -1769,9 +1753,9 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
                     <option>Capital safety</option><option>Balanced growth</option><option>Higher long-term growth</option><option>Not sure</option>
                   </select>
                 </AuditInput>
-                <div className="sm:col-span-2 bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
-                  <p className="text-sm text-emerald-900 font-light leading-relaxed">
-                    Ask Geo will first check risk profile and suitability. It will only show broad planning directions and scenario projections — no specific stocks, schemes, insurance products, or guaranteed returns.
+                <div className="sm:col-span-2 bg-blue-50 border border-blue-100 rounded-2xl p-5">
+                  <p className="text-sm text-blue-900 font-light leading-relaxed">
+                    Samruddhi will first check risk profile and suitability. It will only show broad planning directions and scenario projections — no specific stocks, schemes, insurance products, or guaranteed returns.
                   </p>
                 </div>
               </div>
@@ -1788,7 +1772,7 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
               </button>
 
               {step < steps.length - 1 ? (
-                <GeoButton
+                <BrandButton
                   type="button"
                   onClick={(e) => {
                     if (!validateStep(step)) return;
@@ -1797,11 +1781,11 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
                   icon={ArrowRight}
                 >
                   Continue
-                </GeoButton>
+                </BrandButton>
               ) : (
-                <GeoButton type="submit" disabled={isSending} icon={isSending ? Activity : Sparkles}>
+                <BrandButton type="submit" disabled={isSending} icon={isSending ? Activity : Sparkles}>
                   {isSending ? 'Generating Report...' : 'Generate AI Report'}
-                </GeoButton>
+                </BrandButton>
               )}
             </div>
           </form>
@@ -1818,12 +1802,12 @@ const FinancialAuditPage = ({ setCurrentPage, openContactModal }) => {
     <div className="pt-32 pb-24 animate-in fade-in duration-700 text-left bg-zinc-50 min-h-screen">
       <section className="px-6 sm:px-10 lg:px-16 xl:px-24 w-full max-w-[1800px] mx-auto py-16 lg:py-20">
         <FadeIn direction="down" className="max-w-4xl mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold tracking-widest uppercase mb-6">
-            <ShieldCheck className="w-4 h-4" /> Ask Geo Goal Audit
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-[10px] font-bold tracking-widest uppercase mb-6">
+            <ShieldCheck className="w-4 h-4" /> Samruddhi Goal Audit
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tighter text-zinc-950 mb-6 leading-[1.05]">
             Discover your money goals <br />
-            <span className="font-medium text-emerald-600">before investing.</span>
+            <span className="font-medium text-blue-600">before investing.</span>
           </h1>
           <p className="text-base sm:text-lg lg:text-xl text-zinc-500 font-light leading-relaxed">
             This is not a KYC form. It is a guided financial discovery tool that checks your readiness, risk comfort, goals, and suitability before showing any strategy.
@@ -1844,12 +1828,12 @@ const SipSmartSummary = ({ monthlyInvestment, years, expectedReturn, totalInvest
 
   return (
     <FadeIn delay={450} direction="up">
-      <div className="mt-10 bg-white border border-emerald-100 rounded-[2rem] p-6 sm:p-8 shadow-xl shadow-emerald-100/40 text-left">
+      <div className="mt-10 bg-white border border-blue-100 rounded-[2rem] p-6 sm:p-8 shadow-xl shadow-blue-100/40 text-left">
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
           <div className="max-w-3xl">
-            <div className="flex items-center gap-2 text-emerald-600 mb-4">
+            <div className="flex items-center gap-2 text-blue-600 mb-4">
               <Sparkles className="w-5 h-5" />
-              <h4 className="text-xs font-semibold tracking-widest uppercase">Ask Geo Smart Analysis</h4>
+              <h4 className="text-xs font-semibold tracking-widest uppercase">Samruddhi Smart Analysis</h4>
             </div>
             <h3 className="text-2xl sm:text-3xl font-light tracking-tight text-zinc-950 mb-4">Smart Summary</h3>
             <p className="text-sm sm:text-base text-zinc-600 font-light leading-relaxed">
@@ -1863,15 +1847,15 @@ const SipSmartSummary = ({ monthlyInvestment, years, expectedReturn, totalInvest
             </div>
             <div className="bg-zinc-50 border border-zinc-100 rounded-2xl p-4">
               <p className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 mb-2">10-Year View</p>
-              <p className="text-xl font-light text-emerald-700">{formatCurrency(tenYearValue)}</p>
+              <p className="text-xl font-light text-blue-700">{formatCurrency(tenYearValue)}</p>
             </div>
           </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-4 mt-6">
-          <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-5">
-            <p className="text-[10px] font-bold tracking-widest uppercase text-emerald-700 mb-2">Suitability Check</p>
-            <p className="text-sm text-emerald-950 font-light leading-relaxed">Before increasing SIPs, ensure emergency fund, insurance, and EMI pressure are reviewed.</p>
+          <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-5">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-blue-700 mb-2">Suitability Check</p>
+            <p className="text-sm text-blue-950 font-light leading-relaxed">Before increasing SIPs, ensure emergency fund, insurance, and EMI pressure are reviewed.</p>
           </div>
           <div className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5">
             <p className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 mb-2">Projection Reading</p>
@@ -1896,16 +1880,16 @@ const generateReport = async (config, leadData) => {
 
   const pageWidth = 210;
   const marginX = 14;
-  const green = [4, 120, 87];
-  const lightGreen = [236, 253, 245];
+  const primaryColor = [29, 78, 216];
+  const lightPrimary = [239, 246, 255];
   const zinc = [24, 24, 27];
   const muted = [82, 82, 91];
   const border = [229, 231, 235];
 
   const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
-  const cleanTitle = String(config.reportTitle || 'Ask Geo Report').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
+  const cleanTitle = String(config.reportTitle || 'Samruddhi Report').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
   const cleanName = String(leadData?.name || 'Client').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
-  const filename = `${cleanTitle || 'AskGeo-Report'}-${cleanName || 'Client'}.pdf`;
+  const filename = `${cleanTitle || 'Samruddhi-Report'}-${cleanName || 'Client'}.pdf`;
 
   const stripHtml = (value) => String(value || '')
     .replace(/<br\s*\/?>/gi, '\n')
@@ -1924,7 +1908,7 @@ const generateReport = async (config, leadData) => {
     pdf.setFontSize(7.5);
     pdf.setTextColor(113, 113, 122);
     pdf.text(safePdfText('Educational projection only. Not investment advice, product recommendation, or guarantee of returns.'), marginX, 288);
-    pdf.text(safePdfText('Ask Geo Financial Services'), pageWidth - marginX, 288, { align: 'right' });
+    pdf.text(safePdfText('Samruddhi Investments'), pageWidth - marginX, 288, { align: 'right' });
   };
 
   const ensurePage = (heightNeeded = 24) => {
@@ -1957,7 +1941,7 @@ const generateReport = async (config, leadData) => {
   };
 
   const metricBox = (x, boxY, w, h, label, value, accent = false) => {
-    const bg = accent ? lightGreen : [249, 250, 251];
+    const bg = accent ? lightPrimary : [249, 250, 251];
     pdf.setFillColor(bg[0], bg[1], bg[2]);
     pdf.setDrawColor(...border);
     pdf.roundedRect(x, boxY, w, h, 3, 3, 'FD');
@@ -1967,7 +1951,7 @@ const generateReport = async (config, leadData) => {
     pdf.text(safePdfText(label).toUpperCase(), x + 4, boxY + 6);
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(12);
-    pdf.setTextColor(...(accent ? green : zinc));
+    pdf.setTextColor(...(accent ? primaryColor : zinc));
     const valueLines = pdf.splitTextToSize(safePdfText(value), w - 8);
     pdf.text(valueLines.slice(0, 2), x + 4, boxY + 14);
   };
@@ -2017,19 +2001,19 @@ const generateReport = async (config, leadData) => {
     y += 8;
   };
 
-  pdf.setFillColor(...green);
+  pdf.setFillColor(...primaryColor);
   pdf.rect(0, 0, pageWidth, 82, 'F');
   pdf.setFillColor(255, 255, 255);
-  pdf.roundedRect(marginX, 13, 31, 12, 2, 2, 'F');
+  pdf.roundedRect(marginX, 13, 34, 12, 2, 2, 'F');
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8);
-  pdf.setTextColor(...green);
-  pdf.text('ASK GEO', marginX + 6, 21);
+  pdf.setTextColor(...primaryColor);
+  pdf.text('SAMRUDDHI', marginX + 3, 21);
 
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8);
-  pdf.setTextColor(167, 243, 208);
-  pdf.text(safePdfText(config.reportTitle || 'ASK GEO REPORT').toUpperCase(), marginX, 39);
+  pdf.setTextColor(191, 219, 254);
+  pdf.text(safePdfText(config.reportTitle || 'SAMRUDDHI REPORT').toUpperCase(), marginX, 39);
 
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(24);
@@ -2038,8 +2022,8 @@ const generateReport = async (config, leadData) => {
 
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(9);
-  pdf.setTextColor(209, 250, 229);
-  const headingSummary = pdf.splitTextToSize(safePdfText(stripHtml(config.summaryText || 'Personalized report generated using Ask Geo financial planning tools.')), 165);
+  pdf.setTextColor(219, 234, 254);
+  const headingSummary = pdf.splitTextToSize(safePdfText(stripHtml(config.summaryText || 'Personalized report generated using Samruddhi financial planning tools.')), 165);
   pdf.text(headingSummary.slice(0, 3), marginX, 63);
 
   pdf.setDrawColor(255, 255, 255);
@@ -2048,7 +2032,7 @@ const generateReport = async (config, leadData) => {
 
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7);
-  pdf.setTextColor(209, 250, 229);
+  pdf.setTextColor(219, 234, 254);
   pdf.text('PREPARED FOR', marginX, 77);
   pdf.text('DATE', pageWidth - marginX, 77, { align: 'right' });
 
@@ -2060,12 +2044,12 @@ const generateReport = async (config, leadData) => {
   y = 98;
 
   sectionTitle('Report Summary');
-  pdf.setFillColor(...lightGreen);
-  pdf.setDrawColor(209, 250, 229);
+  pdf.setFillColor(...lightPrimary);
+  pdf.setDrawColor(219, 234, 254);
   pdf.roundedRect(marginX, y, pageWidth - marginX * 2, 32, 4, 4, 'FD');
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(9);
-  pdf.setTextColor(6, 78, 59);
+  pdf.setTextColor(30, 58, 138);
   const summaryLines = pdf.splitTextToSize(safePdfText(stripHtml(config.summaryText || 'This report is generated for educational and planning purposes.')), pageWidth - marginX * 2 - 10);
   pdf.text(summaryLines.slice(0, 5), marginX + 5, y + 8);
   y += 44;
@@ -2080,7 +2064,7 @@ const generateReport = async (config, leadData) => {
   pdf.text(safePdfText(config.primaryMetric?.label || 'Primary Metric').toUpperCase(), marginX + 5, y + 9);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(22);
-  pdf.setTextColor(...green);
+  pdf.setTextColor(...primaryColor);
   pdf.text(safePdfText(config.primaryMetric?.value || '-'), marginX + 5, y + 24);
   y += 46;
 
@@ -2119,7 +2103,7 @@ const generateReport = async (config, leadData) => {
     'This report avoids specific scheme recommendations. Final product selection should be reviewed by a qualified financial advisor.',
   ].forEach((note) => {
     ensurePage(14);
-    pdf.setFillColor(...green);
+    pdf.setFillColor(...primaryColor);
     pdf.circle(marginX + 1.5, y - 1.5, 1.2, 'F');
     paragraph(note, marginX + 6, 174, 8.8, 4.7);
     y += 2;
@@ -2143,7 +2127,7 @@ const generateReport = async (config, leadData) => {
   const recipients = leadData?.email?.trim() ? [leadData.email.trim(), TARGET_EMAIL] : TARGET_EMAIL;
 
   await sendEmailViaBackend(
-    `Ask Geo Report: ${config.reportTitle} for ${leadData?.name || 'New Lead'}`,
+    `Samruddhi Report: ${config.reportTitle} for ${leadData?.name || 'New Lead'}`,
     emailHtmlBody,
     [{ filename, dataUri: pdfDataUri, contentType: 'application/pdf' }],
     recipients
@@ -2180,11 +2164,11 @@ const LeadCaptureModal = ({ isOpen, onClose, onDownloadComplete }) => {
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 text-left">
       <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" onClick={onClose}></div>
       <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
-        <div className="bg-emerald-600 px-8 py-6 flex justify-between items-center relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/30 rounded-full blur-2xl pointer-events-none"></div>
+        <div className="bg-blue-600 px-8 py-6 flex justify-between items-center relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/30 rounded-full blur-2xl pointer-events-none"></div>
            <div>
              <h3 className="text-white text-lg font-medium tracking-tight">Download Report</h3>
-             <p className="text-emerald-100 text-[10px] font-medium tracking-widest uppercase mt-1">Free PDF Blueprint</p>
+             <p className="text-blue-100 text-[10px] font-medium tracking-widest uppercase mt-1">Free PDF Blueprint</p>
            </div>
            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors">
              <X className="w-4 h-4" />
@@ -2195,22 +2179,22 @@ const LeadCaptureModal = ({ isOpen, onClose, onDownloadComplete }) => {
             <p className="text-xs text-zinc-500 font-light mb-4">Enter your details to generate your customized wealth projection blueprint.</p>
             <div>
               <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Full Name</label>
-              <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="e.g. Rajesh Sharma" />
+              <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="e.g. Rajesh Sharma" />
             </div>
             <div>
               <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Phone Number</label>
               <div className="flex">
                 <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-zinc-200 bg-zinc-100 text-zinc-500 text-sm font-medium">+91</span>
-                <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value.replace(/\D/g, '')})} className="w-full px-4 py-3 rounded-r-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile number" />
+                <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value.replace(/\D/g, '')})} className="w-full px-4 py-3 rounded-r-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile number" />
               </div>
             </div>
             <div>
               <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Email Address</label>
-              <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="you@example.com" />
+              <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="you@example.com" />
             </div>
-            <GeoButton type="submit" disabled={isProcessing} className="mt-4 !py-3" wFull icon={isProcessing ? Activity : Download}>
+            <BrandButton type="submit" disabled={isProcessing} className="mt-4 !py-3" wFull icon={isProcessing ? Activity : Download}>
               {isProcessing ? 'Generating PDF...' : 'Verify & Download'}
-            </GeoButton>
+            </BrandButton>
           </form>
         </div>
       </div>
@@ -2290,30 +2274,30 @@ const SipCalculatorWidget = () => {
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Monthly Investment</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{formatCurrency(monthlyInvestment)}</div>
             </div>
-            <input type="range" min="1000" max="200000" step="1000" value={monthlyInvestment} onChange={(e) => setMonthlyInvestment(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="1000" max="200000" step="1000" value={monthlyInvestment} onChange={(e) => setMonthlyInvestment(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={200} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-4">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Investment Period</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{years} Years</div>
             </div>
-            <input type="range" min="1" max="40" step="1" value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="1" max="40" step="1" value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={300} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-4">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Expected Return (p.a)</label>
-              <div className="text-xl sm:text-2xl font-light text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 w-full sm:w-auto shadow-sm">{expectedReturn}%</div>
+              <div className="text-xl sm:text-2xl font-light text-blue-600 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 w-full sm:w-auto shadow-sm">{expectedReturn}%</div>
             </div>
-            <input type="range" min="5" max="25" step="0.5" value={expectedReturn} onChange={(e) => setExpectedReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="5" max="25" step="0.5" value={expectedReturn} onChange={(e) => setExpectedReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
 
           <FadeIn delay={400} direction="up">
-             <div className="bg-white border border-emerald-100 rounded-2xl p-6 mt-6 shadow-xl shadow-emerald-100/50">
-               <div className="flex items-center gap-2 mb-4 text-emerald-600">
+             <div className="bg-white border border-blue-100 rounded-2xl p-6 mt-6 shadow-xl shadow-blue-100/50">
+               <div className="flex items-center gap-2 mb-4 text-blue-600">
                   <Bot className="w-5 h-5" />
                   <h4 className="text-xs font-semibold tracking-widest uppercase">Live Market Allocation</h4>
                </div>
-               <p className="text-sm text-zinc-600 mb-5 font-light">To achieve {expectedReturn}% p.a., Ask Geo shows an indicative category-level allocation for your {formatCurrency(monthlyInvestment)} monthly SIP. This is not a scheme recommendation.</p>
+               <p className="text-sm text-zinc-600 mb-5 font-light">To achieve {expectedReturn}% p.a., Samruddhi shows an indicative category-level allocation for your {formatCurrency(monthlyInvestment)} monthly SIP. This is not a scheme recommendation.</p>
                <div className="space-y-3">
                   {getMarketAllocation(monthlyInvestment, expectedReturn).map((fund, idx) => (
                     <div key={idx} className="flex justify-between items-center text-sm border-b border-zinc-100 pb-3 last:border-0 last:pb-0 hover:bg-zinc-50 rounded-lg p-2 transition-colors">
@@ -2321,7 +2305,7 @@ const SipCalculatorWidget = () => {
                         <p className="font-medium text-zinc-900">{fund.name}</p>
                         <p className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">{fund.category} • {fund.percent}%</p>
                       </div>
-                      <p className="font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-md">{formatCurrency(fund.amount)}/mo</p>
+                      <p className="font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-md">{formatCurrency(fund.amount)}/mo</p>
                     </div>
                   ))}
                </div>
@@ -2331,16 +2315,16 @@ const SipCalculatorWidget = () => {
 
         <div className="lg:col-span-5 relative">
           <FadeIn delay={400} direction="zoom" className="bg-zinc-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-[250px] h-[250px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/30 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-[250px] h-[250px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-500/30 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
             
             <div className="space-y-8 relative z-10 mb-10">
               <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
-                <p className="text-[10px] sm:text-xs font-medium tracking-widest text-emerald-200/70 uppercase mb-1">Total Invested</p>
+                <p className="text-[10px] sm:text-xs font-medium tracking-widest text-blue-200/70 uppercase mb-1">Total Invested</p>
                 <p className="text-2xl sm:text-3xl font-light">{formatCurrency(totalInvested)}</p>
               </div>
               <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
-                <p className="text-[10px] sm:text-xs font-medium tracking-widest text-emerald-200/70 uppercase mb-1">Wealth Gained</p>
-                <p className="text-2xl sm:text-3xl font-light text-emerald-400">+{formatCurrency(wealthGained)}</p>
+                <p className="text-[10px] sm:text-xs font-medium tracking-widest text-blue-200/70 uppercase mb-1">Wealth Gained</p>
+                <p className="text-2xl sm:text-3xl font-light text-blue-400">+{formatCurrency(wealthGained)}</p>
               </div>
             </div>
             
@@ -2348,9 +2332,9 @@ const SipCalculatorWidget = () => {
               <p className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-400 uppercase mb-3">Future Value</p>
               <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none mb-8">{formatCurrency(maturityValue)}</p>
               
-              <GeoButton onClick={handleDownloadInitiate} wFull icon={Download}>
+              <BrandButton onClick={handleDownloadInitiate} wFull icon={Download}>
                 Download Strategy Report
-              </GeoButton>
+              </BrandButton>
             </div>
           </FadeIn>
         </div>
@@ -2408,9 +2392,9 @@ const StepUpCalculatorWidget = () => {
     <>
       <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 animate-in fade-in zoom-in-95 duration-500 text-left">
         <div className="lg:col-span-7 space-y-6 lg:space-y-8">
-          <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl mb-4 shadow-sm">
-            <p className="text-sm text-emerald-900 font-medium flex items-start gap-3">
-               <Zap className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="bg-blue-50 border border-blue-200 p-5 rounded-2xl mb-4 shadow-sm">
+            <p className="text-sm text-blue-900 font-medium flex items-start gap-3">
+               <Zap className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                Step-Up SIP dramatically compresses your wealth creation timeline by aligning your investments with your annual salary hikes.
             </p>
           </div>
@@ -2419,33 +2403,33 @@ const StepUpCalculatorWidget = () => {
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Initial Monthly SIP</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{formatCurrency(initialSip)}</div>
             </div>
-            <input type="range" min="1000" max="200000" step="1000" value={initialSip} onChange={(e) => setInitialSip(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="1000" max="200000" step="1000" value={initialSip} onChange={(e) => setInitialSip(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={150} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Annual Step-Up</label>
-              <div className="text-xl sm:text-2xl font-light text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 w-full sm:w-auto shadow-sm">{stepUpPercent}%</div>
+              <div className="text-xl sm:text-2xl font-light text-blue-600 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 w-full sm:w-auto shadow-sm">{stepUpPercent}%</div>
             </div>
-            <input type="range" min="1" max="25" step="1" value={stepUpPercent} onChange={(e) => setStepUpPercent(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="1" max="25" step="1" value={stepUpPercent} onChange={(e) => setStepUpPercent(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={200} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Period (Years)</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{years} Years</div>
             </div>
-            <input type="range" min="1" max="30" step="1" value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="1" max="30" step="1" value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={250} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
                <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Expected Return</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{expectedReturn}%</div>
             </div>
-            <input type="range" min="5" max="25" step="0.5" value={expectedReturn} onChange={(e) => setExpectedReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="5" max="25" step="0.5" value={expectedReturn} onChange={(e) => setExpectedReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
         </div>
         <div className="lg:col-span-5 relative">
           <FadeIn delay={300} direction="zoom" className="bg-zinc-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/20 to-transparent rounded-full blur-[40px] pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-500/20 to-transparent rounded-full blur-[40px] pointer-events-none"></div>
             <div className="space-y-6 relative z-10 mb-10">
               <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
                 <p className="text-[10px] sm:text-xs font-medium tracking-widest text-zinc-400 uppercase mb-1">Total Invested</p>
@@ -2453,16 +2437,16 @@ const StepUpCalculatorWidget = () => {
               </div>
               <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
                 <p className="text-[10px] sm:text-xs font-medium tracking-widest text-zinc-400 uppercase mb-1">Wealth Gained</p>
-                <p className="text-xl sm:text-2xl font-light text-emerald-400">+{formatCurrency(wealthGained)}</p>
+                <p className="text-xl sm:text-2xl font-light text-blue-400">+{formatCurrency(wealthGained)}</p>
               </div>
             </div>
             <div className="pt-8 border-t border-zinc-800 relative z-10">
-              <p className="text-[10px] sm:text-xs font-bold tracking-widest text-emerald-500/80 uppercase mb-3">Accelerated Future Value</p>
+              <p className="text-[10px] sm:text-xs font-bold tracking-widest text-blue-500/80 uppercase mb-3">Accelerated Future Value</p>
               <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none mb-8">{formatCurrency(futureValue)}</p>
               
-              <GeoButton onClick={handleDownloadInitiate} wFull icon={Download}>
+              <BrandButton onClick={handleDownloadInitiate} wFull icon={Download}>
                 Download Strategy Report
-              </GeoButton>
+              </BrandButton>
             </div>
           </FadeIn>
         </div>
@@ -2522,9 +2506,9 @@ const StpToSipCalculatorWidget = () => {
     <>
       <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 animate-in fade-in zoom-in-95 duration-500 text-left">
         <div className="lg:col-span-7 space-y-6 lg:space-y-8">
-          <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl mb-4 shadow-sm">
-            <p className="text-sm text-emerald-900 font-medium flex items-start gap-3">
-               <RefreshCw className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="bg-blue-50 border border-blue-200 p-5 rounded-2xl mb-4 shadow-sm">
+            <p className="text-sm text-blue-900 font-medium flex items-start gap-3">
+               <RefreshCw className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                STP to SIP Planner: Start with a lumpsum, transfer it systematically, and see the average SIP you can comfortably create over time.
             </p>
           </div>
@@ -2533,51 +2517,51 @@ const StpToSipCalculatorWidget = () => {
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Lumpsum Parked</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{formatCurrency(lumpsum)}</div>
             </div>
-            <input type="range" min="100000" max="10000000" step="50000" value={lumpsum} onChange={(e) => setLumpsum(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="100000" max="10000000" step="50000" value={lumpsum} onChange={(e) => setLumpsum(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={150} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">STP Period</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{months} Months</div>
             </div>
-            <input type="range" min="6" max="120" step="1" value={months} onChange={(e) => setMonths(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="6" max="120" step="1" value={months} onChange={(e) => setMonths(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={200} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Source Fund Return</label>
-              <div className="text-xl sm:text-2xl font-light text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 w-full sm:w-auto shadow-sm">{sourceReturn}%</div>
+              <div className="text-xl sm:text-2xl font-light text-blue-600 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 w-full sm:w-auto shadow-sm">{sourceReturn}%</div>
             </div>
-            <input type="range" min="3" max="10" step="0.5" value={sourceReturn} onChange={(e) => setSourceReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="3" max="10" step="0.5" value={sourceReturn} onChange={(e) => setSourceReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={250} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
                <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Target Fund Return</label>
-              <div className="text-xl sm:text-2xl font-light text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 w-full sm:w-auto shadow-sm">{targetReturn}%</div>
+              <div className="text-xl sm:text-2xl font-light text-blue-600 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 w-full sm:w-auto shadow-sm">{targetReturn}%</div>
             </div>
-            <input type="range" min="6" max="18" step="0.5" value={targetReturn} onChange={(e) => setTargetReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="6" max="18" step="0.5" value={targetReturn} onChange={(e) => setTargetReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
         </div>
         <div className="lg:col-span-5 relative">
-          <FadeIn delay={300} direction="zoom" className="bg-emerald-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-[260px] h-[260px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/20 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
+          <FadeIn delay={300} direction="zoom" className="bg-blue-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-[260px] h-[260px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-500/20 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
             <div className="space-y-6 relative z-10 mb-10">
               <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
-                <p className="text-[10px] sm:text-xs font-medium tracking-widest text-emerald-200 uppercase mb-1">Sustainable Monthly STP</p>
-                <p className="text-2xl sm:text-3xl font-light text-emerald-300">{formatCurrency(sustainableMonthlyStp)}</p>
+                <p className="text-[10px] sm:text-xs font-medium tracking-widest text-blue-200 uppercase mb-1">Sustainable Monthly STP</p>
+                <p className="text-2xl sm:text-3xl font-light text-blue-300">{formatCurrency(sustainableMonthlyStp)}</p>
               </div>
               <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
-                <p className="text-[10px] sm:text-xs font-medium tracking-widest text-emerald-200 uppercase mb-1">Average SIP Equivalent</p>
+                <p className="text-[10px] sm:text-xs font-medium tracking-widest text-blue-200 uppercase mb-1">Average SIP Equivalent</p>
                 <p className="text-xl sm:text-2xl font-light">{formatCurrency(averageSipEquivalent)}</p>
               </div>
             </div>
-            <div className="pt-8 border-t border-emerald-900/60 relative z-10">
-              <p className="text-[10px] sm:text-xs font-bold tracking-widest text-emerald-300 uppercase mb-3">Projected Target Corpus</p>
+            <div className="pt-8 border-t border-blue-900/60 relative z-10">
+              <p className="text-[10px] sm:text-xs font-bold tracking-widest text-blue-300 uppercase mb-3">Projected Target Corpus</p>
               <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none mb-5">{formatCurrency(targetCorpus)}</p>
-              <p className="text-xs text-emerald-300 font-medium bg-emerald-900/30 inline-block px-4 py-2 rounded-lg border border-emerald-500/20 mb-8">Net gain over parked capital: {formatCurrency(wealthCreated)}</p>
+              <p className="text-xs text-blue-300 font-medium bg-blue-900/30 inline-block px-4 py-2 rounded-lg border border-blue-500/20 mb-8">Net gain over parked capital: {formatCurrency(wealthCreated)}</p>
               
-              <GeoButton onClick={handleDownloadInitiate} wFull icon={Download}>
+              <BrandButton onClick={handleDownloadInitiate} wFull icon={Download}>
                 Download Strategy Report
-              </GeoButton>
+              </BrandButton>
             </div>
           </FadeIn>
         </div>
@@ -2626,9 +2610,9 @@ const EmiMatchSipWidget = () => {
     <>
       <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 animate-in fade-in zoom-in-95 duration-500 text-left">
         <div className="lg:col-span-7 space-y-6 lg:space-y-8">
-          <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl mb-4 shadow-sm">
-            <p className="text-sm text-emerald-900 font-medium flex items-start gap-3">
-               <Activity className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="bg-blue-50 border border-blue-200 p-5 rounded-2xl mb-4 shadow-sm">
+            <p className="text-sm text-blue-900 font-medium flex items-start gap-3">
+               <Activity className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                EMI Match SIP: For purchases like a bike, compare the EMI you would pay versus investing the same monthly amount instead.
             </p>
           </div>
@@ -2637,21 +2621,21 @@ const EmiMatchSipWidget = () => {
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Asset Cost</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{formatCurrency(assetCost)}</div>
             </div>
-            <input type="range" min="50000" max="5000000" step="10000" value={assetCost} onChange={(e) => setAssetCost(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="50000" max="5000000" step="10000" value={assetCost} onChange={(e) => setAssetCost(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={150} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Down Payment</label>
-              <div className="text-xl sm:text-2xl font-light text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 w-full sm:w-auto shadow-sm">{formatCurrency(downPayment)}</div>
+              <div className="text-xl sm:text-2xl font-light text-blue-600 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 w-full sm:w-auto shadow-sm">{formatCurrency(downPayment)}</div>
             </div>
-            <input type="range" min="0" max={assetCost} step="10000" value={downPayment} onChange={(e) => setDownPayment(Math.min(Number(e.target.value), assetCost))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="0" max={assetCost} step="10000" value={downPayment} onChange={(e) => setDownPayment(Math.min(Number(e.target.value), assetCost))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={200} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Loan Tenure</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{tenureYears} Years</div>
             </div>
-            <input type="range" min="1" max="7" step="1" value={tenureYears} onChange={(e) => setTenureYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="1" max="7" step="1" value={tenureYears} onChange={(e) => setTenureYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={250} direction="left">
             <div className="grid sm:grid-cols-2 gap-6">
@@ -2665,16 +2649,16 @@ const EmiMatchSipWidget = () => {
               <div>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
                   <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">SIP Return</label>
-                  <div className="text-xl sm:text-2xl font-light text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 w-full sm:w-auto shadow-sm">{sipReturn}%</div>
+                  <div className="text-xl sm:text-2xl font-light text-blue-600 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 w-full sm:w-auto shadow-sm">{sipReturn}%</div>
                 </div>
-                <input type="range" min="6" max="18" step="0.5" value={sipReturn} onChange={(e) => setSipReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+                <input type="range" min="6" max="18" step="0.5" value={sipReturn} onChange={(e) => setSipReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
               </div>
             </div>
           </FadeIn>
         </div>
         <div className="lg:col-span-5 relative">
           <FadeIn delay={300} direction="zoom" className="bg-zinc-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-[260px] h-[260px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/20 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-[260px] h-[260px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-500/20 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
             <div className="space-y-6 relative z-10 mb-10">
               <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
                 <p className="text-[10px] sm:text-xs font-medium tracking-widest text-zinc-400 uppercase mb-1">Monthly EMI</p>
@@ -2688,13 +2672,13 @@ const EmiMatchSipWidget = () => {
             <div className="pt-8 border-t border-zinc-800 relative z-10">
               <p className="text-[10px] sm:text-xs font-bold tracking-widest text-white uppercase mb-3">If EMI amount were invested instead</p>
               <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none mb-5">{formatCurrency(investedEmiCorpus)}</p>
-              <p className={`text-xs font-medium inline-block px-4 py-2 rounded-lg border mb-8 ${decisionGap >= 0 ? 'text-emerald-300 bg-emerald-900/30 border-emerald-500/20' : 'text-zinc-300 bg-zinc-800/50 border-zinc-600'}`}>
+              <p className={`text-xs font-medium inline-block px-4 py-2 rounded-lg border mb-8 ${decisionGap >= 0 ? 'text-blue-300 bg-blue-900/30 border-blue-500/20' : 'text-zinc-300 bg-zinc-800/50 border-zinc-600'}`}>
                 Net difference vs asset cost: {formatCurrency(decisionGap)}
               </p>
               
-              <GeoButton onClick={handleDownloadInitiate} wFull icon={Download}>
+              <BrandButton onClick={handleDownloadInitiate} wFull icon={Download}>
                 Download Strategy Report
-              </GeoButton>
+              </BrandButton>
             </div>
           </FadeIn>
         </div>
@@ -2769,9 +2753,9 @@ const EmiVsSipCalculatorWidget = () => {
           <FadeIn delay={250} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
                <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Potential Market Return</label>
-              <div className="text-xl sm:text-2xl font-light text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 w-full sm:w-auto shadow-sm">{marketReturn}%</div>
+              <div className="text-xl sm:text-2xl font-light text-blue-600 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 w-full sm:w-auto shadow-sm">{marketReturn}%</div>
             </div>
-            <input type="range" min="5" max="25" step="0.5" value={marketReturn} onChange={(e) => setMarketReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="5" max="25" step="0.5" value={marketReturn} onChange={(e) => setMarketReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
         </div>
         <div className="lg:col-span-5 relative">
@@ -2788,11 +2772,11 @@ const EmiVsSipCalculatorWidget = () => {
             </div>
             <div className="pt-8 border-t border-zinc-800 relative z-10">
               <p className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-500 uppercase mb-3">If invested in SIP instead:</p>
-              <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-emerald-400 tracking-tight leading-none mb-8">{formatCurrency(projectedWealth)}</p>
+              <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-blue-400 tracking-tight leading-none mb-8">{formatCurrency(projectedWealth)}</p>
               
-              <GeoButton onClick={handleDownloadInitiate} wFull icon={Download}>
+              <BrandButton onClick={handleDownloadInitiate} wFull icon={Download}>
                 Download Strategy Report
-              </GeoButton>
+              </BrandButton>
             </div>
           </FadeIn>
         </div>
@@ -2882,9 +2866,9 @@ const ExtraEmiCalculatorWidget = () => {
     <>
       <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 animate-in fade-in zoom-in-95 duration-500 text-left">
         <div className="lg:col-span-7 space-y-6 lg:space-y-8">
-          <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl mb-4 shadow-sm">
-            <p className="text-sm text-emerald-900 font-medium flex items-start gap-3">
-               <ChevronsDown className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="bg-blue-50 border border-blue-200 p-5 rounded-2xl mb-4 shadow-sm">
+            <p className="text-sm text-blue-900 font-medium flex items-start gap-3">
+               <ChevronsDown className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                Prepayment Accelerator: See exactly how much time and interest you save by maintaining your original EMI after a rate drop, combined with extra yearly payments.
             </p>
           </div>
@@ -2892,60 +2876,60 @@ const ExtraEmiCalculatorWidget = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <FadeIn delay={100} direction="left" className="space-y-3">
                 <label className="text-[10px] sm:text-xs font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Loan Amount</span> <span className="text-zinc-900 font-bold">{formatShortAmt(loanAmount)}</span></label>
-                <input type="range" min="1000000" max="50000000" step="500000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+                <input type="range" min="1000000" max="50000000" step="500000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
               </FadeIn>
               <FadeIn delay={150} direction="left" className="space-y-3">
                 <label className="text-[10px] sm:text-xs font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Original Tenure</span> <span className="text-zinc-900 font-bold">{originalTenure} Years</span></label>
-                <input type="range" min="5" max="30" step="1" value={originalTenure} onChange={(e) => setOriginalTenure(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+                <input type="range" min="5" max="30" step="1" value={originalTenure} onChange={(e) => setOriginalTenure(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
               </FadeIn>
               <FadeIn delay={200} direction="left" className="space-y-3">
                 <label className="text-[10px] sm:text-xs font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Original Rate</span> <span className="text-zinc-900 font-bold">{originalRate}%</span></label>
-                <input type="range" min="6" max="15" step="0.1" value={originalRate} onChange={(e) => setOriginalRate(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+                <input type="range" min="6" max="15" step="0.1" value={originalRate} onChange={(e) => setOriginalRate(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
               </FadeIn>
               <FadeIn delay={250} direction="left" className="space-y-3">
-                <label className="text-[10px] sm:text-xs font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Current Rate</span> <span className="text-emerald-600 font-bold">{currentRate}%</span></label>
-                <input type="range" min="6" max="15" step="0.1" value={currentRate} onChange={(e) => setCurrentRate(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+                <label className="text-[10px] sm:text-xs font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Current Rate</span> <span className="text-blue-600 font-bold">{currentRate}%</span></label>
+                <input type="range" min="6" max="15" step="0.1" value={currentRate} onChange={(e) => setCurrentRate(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
               </FadeIn>
           </div>
 
           <div className="pt-6 border-t border-zinc-100">
               <FadeIn delay={300} direction="left" className="mb-6 space-y-3">
                 <label className="text-[10px] sm:text-xs font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Extra EMIs per year</span> <span className="text-zinc-900 font-bold">{extraEmisPerYear}</span></label>
-                <input type="range" min="0" max="12" step="1" value={extraEmisPerYear} onChange={(e) => setExtraEmisPerYear(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+                <input type="range" min="0" max="12" step="1" value={extraEmisPerYear} onChange={(e) => setExtraEmisPerYear(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
               </FadeIn>
               <FadeIn delay={350} direction="left" className="space-y-3">
                 <label className="text-[10px] sm:text-xs font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Extra EMI amount (₹)</span> <span className="text-zinc-900 font-bold">{formatCurrency(extraEmiAmount)}</span></label>
-                <input type="range" min="10000" max="500000" step="10000" value={extraEmiAmount} onChange={(e) => setExtraEmiAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+                <input type="range" min="10000" max="500000" step="10000" value={extraEmiAmount} onChange={(e) => setExtraEmiAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
               </FadeIn>
           </div>
         </div>
         
         <div className="lg:col-span-5 relative">
-          <FadeIn delay={400} direction="zoom" className="bg-emerald-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-[250px] h-[250px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/20 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
+          <FadeIn delay={400} direction="zoom" className="bg-blue-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-[250px] h-[250px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-500/20 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
             
             <div className="space-y-6 relative z-10 mb-8">
-              <div className="grid grid-cols-2 gap-4 border-b border-emerald-800/50 pb-6">
+              <div className="grid grid-cols-2 gap-4 border-b border-blue-800/50 pb-6">
                 <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-                  <p className="text-[9px] font-medium tracking-widest text-emerald-200 uppercase mb-1">Loan amount</p>
+                  <p className="text-[9px] font-medium tracking-widest text-blue-200 uppercase mb-1">Loan amount</p>
                   <p className="text-base font-medium">{formatShortAmt(loanAmount)}</p>
                 </div>
                 <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-                  <p className="text-[9px] font-medium tracking-widest text-emerald-200 uppercase mb-1">Monthly EMI</p>
+                  <p className="text-[9px] font-medium tracking-widest text-blue-200 uppercase mb-1">Monthly EMI</p>
                   <p className="text-base font-medium">{formatCurrency(originalEMI)}</p>
                 </div>
                 <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-                  <p className="text-[9px] font-medium tracking-widest text-emerald-200 uppercase mb-1">Original Rate</p>
+                  <p className="text-[9px] font-medium tracking-widest text-blue-200 uppercase mb-1">Original Rate</p>
                   <p className="text-base font-medium">{originalRate}%</p>
                 </div>
-                 <div className="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20">
-                  <p className="text-[9px] font-medium tracking-widest text-emerald-300 uppercase mb-1">Current Rate</p>
-                  <p className="text-base font-medium text-emerald-400">{currentRate}%</p>
+                 <div className="bg-blue-500/10 p-3 rounded-xl border border-blue-500/20">
+                  <p className="text-[9px] font-medium tracking-widest text-blue-300 uppercase mb-1">Current Rate</p>
+                  <p className="text-base font-medium text-blue-400">{currentRate}%</p>
                 </div>
               </div>
 
               <div className="bg-black/20 rounded-2xl p-5 border border-white/5">
-                 <p className="text-[10px] font-medium tracking-widest text-emerald-300 uppercase mb-4">Tenure comparison</p>
+                 <p className="text-[10px] font-medium tracking-widest text-blue-300 uppercase mb-4">Tenure comparison</p>
                  <div className="grid grid-cols-3 gap-3">
                     <div>
                        <p className="text-[9px] text-zinc-400 mb-1">At {originalRate}% original</p>
@@ -2953,37 +2937,37 @@ const ExtraEmiCalculatorWidget = () => {
                     </div>
                     <div>
                        <p className="text-[9px] text-zinc-400 mb-1">At {currentRate}% (same EMI)</p>
-                       <p className="text-sm font-semibold text-emerald-400">{formatYM(monthsRateDrop)}</p>
+                       <p className="text-sm font-semibold text-blue-400">{formatYM(monthsRateDrop)}</p>
                     </div>
                     <div>
                        <p className="text-[9px] text-zinc-400 mb-1">At {currentRate}% + prepay</p>
-                       <p className="text-sm font-semibold text-emerald-400">{formatYM(mPrepay)}</p>
+                       <p className="text-sm font-semibold text-blue-400">{formatYM(mPrepay)}</p>
                     </div>
                  </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3 mt-6 mb-8">
                  <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-                    <p className="text-[8px] font-medium tracking-widest text-emerald-200 uppercase mb-1">Saved by rate drop</p>
-                    <p className="text-sm font-bold text-emerald-400 mb-1">{formatYM(safeTime(savedTimeRateDrop))}</p>
+                    <p className="text-[8px] font-medium tracking-widest text-blue-200 uppercase mb-1">Saved by rate drop</p>
+                    <p className="text-sm font-bold text-blue-400 mb-1">{formatYM(safeTime(savedTimeRateDrop))}</p>
                     <p className="text-[9px] text-zinc-400">{formatShortAmt(safeMoney(savedMoneyRateDrop))}</p>
                  </div>
                  <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-                    <p className="text-[8px] font-medium tracking-widest text-emerald-200 uppercase mb-1">Saved by prepay</p>
-                    <p className="text-sm font-bold text-emerald-400 mb-1">{formatYM(safeTime(savedTimePrepay))}</p>
+                    <p className="text-[8px] font-medium tracking-widest text-blue-200 uppercase mb-1">Saved by prepay</p>
+                    <p className="text-sm font-bold text-blue-400 mb-1">{formatYM(safeTime(savedTimePrepay))}</p>
                     <p className="text-[9px] text-zinc-400">{formatShortAmt(safeMoney(savedMoneyPrepay))}</p>
                  </div>
-                 <div className="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20">
-                    <p className="text-[8px] font-medium tracking-widest text-emerald-200 uppercase mb-1">Total saved</p>
+                 <div className="bg-blue-500/10 p-3 rounded-xl border border-blue-500/20">
+                    <p className="text-[8px] font-medium tracking-widest text-blue-200 uppercase mb-1">Total saved</p>
                     <p className="text-sm font-bold text-white mb-1">{formatYM(safeTime(totalSavedTime))}</p>
-                    <p className="text-[9px] text-emerald-400 font-medium">{formatShortAmt(safeMoney(totalSavedMoney))}</p>
+                    <p className="text-[9px] text-blue-400 font-medium">{formatShortAmt(safeMoney(totalSavedMoney))}</p>
                  </div>
               </div>
             </div>
 
-            <GeoButton onClick={handleDownloadInitiate} className="mt-6 relative z-10" wFull icon={Download}>
+            <BrandButton onClick={handleDownloadInitiate} className="mt-6 relative z-10" wFull icon={Download}>
               Download Strategy Report
-            </GeoButton>
+            </BrandButton>
           </FadeIn>
         </div>
       </div>
@@ -3032,9 +3016,9 @@ const SmartEmiCalculatorWidget = () => {
     <>
       <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 animate-in fade-in zoom-in-95 duration-500 text-left">
         <div className="lg:col-span-7 space-y-6 lg:space-y-8">
-          <div className="bg-green-50 border border-green-200 p-5 rounded-2xl mb-4 shadow-sm">
-            <p className="text-sm text-green-900 font-medium flex items-start gap-3">
-               <Sparkles className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+          <div className="bg-sky-50 border border-sky-200 p-5 rounded-2xl mb-4 shadow-sm">
+            <p className="text-sm text-sky-900 font-medium flex items-start gap-3">
+               <Sparkles className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
                Loan Cost Recovery: Build a parallel SIP that can recover just your interest, your principal, or your entire principal plus interest outflow.
             </p>
           </div>
@@ -3050,7 +3034,7 @@ const SmartEmiCalculatorWidget = () => {
                   onClick={() => setRecoveryMode(option.id)}
                   className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide transition-all duration-300 border ${
                     recoveryMode === option.id
-                      ? 'bg-green-600 text-white border-green-600 shadow-lg shadow-green-600/20'
+                      ? 'bg-sky-600 text-white border-sky-600 shadow-lg shadow-sky-600/20'
                       : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300'
                   }`}
                 >
@@ -3064,33 +3048,33 @@ const SmartEmiCalculatorWidget = () => {
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Loan Amount</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{formatCurrency(loanAmount)}</div>
             </div>
-            <input type="range" min="500000" max="50000000" step="100000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-green-600" />
+            <input type="range" min="500000" max="50000000" step="100000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-sky-600" />
           </FadeIn>
           <FadeIn delay={150} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Loan Tenure</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{tenureYears} Years</div>
             </div>
-            <input type="range" min="5" max="30" step="1" value={tenureYears} onChange={(e) => setTenureYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-green-600" />
+            <input type="range" min="5" max="30" step="1" value={tenureYears} onChange={(e) => setTenureYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-sky-600" />
           </FadeIn>
           <FadeIn delay={200} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Home Loan Interest</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{loanInterest}%</div>
             </div>
-            <input type="range" min="6" max="15" step="0.1" value={loanInterest} onChange={(e) => setLoanInterest(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-green-600" />
+            <input type="range" min="6" max="15" step="0.1" value={loanInterest} onChange={(e) => setLoanInterest(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-sky-600" />
           </FadeIn>
           <FadeIn delay={250} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
                <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Expected SIP Return</label>
-              <div className="text-xl sm:text-2xl font-light text-green-600 bg-green-50 px-4 py-2 rounded-xl border border-green-200 w-full sm:w-auto shadow-sm">{sipReturn}%</div>
+              <div className="text-xl sm:text-2xl font-light text-sky-600 bg-sky-50 px-4 py-2 rounded-xl border border-sky-200 w-full sm:w-auto shadow-sm">{sipReturn}%</div>
             </div>
-            <input type="range" min="8" max="25" step="0.5" value={sipReturn} onChange={(e) => setSipReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-green-600" />
+            <input type="range" min="8" max="25" step="0.5" value={sipReturn} onChange={(e) => setSipReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-sky-600" />
           </FadeIn>
         </div>
         <div className="lg:col-span-5 relative">
           <FadeIn delay={300} direction="zoom" className="bg-zinc-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-green-500/20 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-sky-500/20 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
             
             <div className="space-y-6 relative z-10 mb-8">
               <div className="bg-white/5 p-5 rounded-2xl backdrop-blur-sm border border-white/10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
@@ -3104,15 +3088,15 @@ const SmartEmiCalculatorWidget = () => {
             </div>
 
             <div className="pt-8 relative z-10">
-              <p className="text-[10px] sm:text-xs font-bold tracking-widest text-green-400 uppercase mb-4">Required Monthly SIP to recover {recoveryLabel}</p>
+              <p className="text-[10px] sm:text-xs font-bold tracking-widest text-sky-400 uppercase mb-4">Required Monthly SIP to recover {recoveryLabel}</p>
               <p className="text-5xl sm:text-6xl md:text-7xl font-light text-white tracking-tight leading-none mb-8">{formatCurrency(requiredSip)}</p>
-              <div className="inline-flex items-center gap-3 bg-green-900/30 border border-green-500/20 text-green-300 text-sm font-medium px-5 py-3 rounded-xl shadow-inner mb-8 w-full">
-                <Sparkles className="w-5 h-5 text-green-400 animate-pulse shrink-0" /> That's just {sipPercentageOfEmi}% of your EMI amount!
+              <div className="inline-flex items-center gap-3 bg-sky-900/30 border border-sky-500/20 text-sky-300 text-sm font-medium px-5 py-3 rounded-xl shadow-inner mb-8 w-full">
+                <Sparkles className="w-5 h-5 text-sky-400 animate-pulse shrink-0" /> That's just {sipPercentageOfEmi}% of your EMI amount!
               </div>
               
-              <GeoButton onClick={handleDownloadInitiate} className="relative z-10" wFull icon={Download}>
+              <BrandButton onClick={handleDownloadInitiate} className="relative z-10" wFull icon={Download}>
                 Download Strategy Report
-              </GeoButton>
+              </BrandButton>
             </div>
           </FadeIn>
         </div>
@@ -3181,9 +3165,9 @@ const EarlyClosureWidget = () => {
     <>
       <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 animate-in fade-in zoom-in-95 duration-500 text-left">
         <div className="lg:col-span-7 space-y-6 lg:space-y-8">
-          <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl mb-4 shadow-sm">
-            <p className="text-sm text-emerald-900 font-medium flex items-start gap-3">
-               <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="bg-blue-50 border border-blue-200 p-5 rounded-2xl mb-4 shadow-sm">
+            <p className="text-sm text-blue-900 font-medium flex items-start gap-3">
+               <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                The Debt Destroyer: Calculate the exact parallel SIP required to build a corpus large enough to foreclose your home loan years ahead of schedule.
             </p>
           </div>
@@ -3199,7 +3183,7 @@ const EarlyClosureWidget = () => {
                   onClick={() => setClosureMode(option.id)}
                   className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide transition-all duration-300 border ${
                     closureMode === option.id
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/20'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20'
                       : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300'
                   }`}
                 >
@@ -3213,49 +3197,49 @@ const EarlyClosureWidget = () => {
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Loan Amount</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{formatCurrency(loanAmount)}</div>
             </div>
-            <input type="range" min="500000" max="50000000" step="100000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="500000" max="50000000" step="100000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={150} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Original Loan Tenure</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{originalTenure} Years</div>
             </div>
-            <input type="range" min="5" max="30" step="1" value={originalTenure} onChange={(e) => setOriginalTenure(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="5" max="30" step="1" value={originalTenure} onChange={(e) => setOriginalTenure(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={200} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Target Closure Time</label>
-              <div className="text-xl sm:text-2xl font-light text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 w-full sm:w-auto shadow-sm">{targetTenure} Years</div>
+              <div className="text-xl sm:text-2xl font-light text-blue-600 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 w-full sm:w-auto shadow-sm">{targetTenure} Years</div>
             </div>
-            <input type="range" min="1" max={Math.max(originalTenure - 1, 1)} step="1" value={targetTenure} onChange={(e) => setTargetTenure(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="1" max={Math.max(originalTenure - 1, 1)} step="1" value={targetTenure} onChange={(e) => setTargetTenure(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={250} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Loan Interest Rate</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{loanInterest}%</div>
             </div>
-            <input type="range" min="6" max="15" step="0.1" value={loanInterest} onChange={(e) => setLoanInterest(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="6" max="15" step="0.1" value={loanInterest} onChange={(e) => setLoanInterest(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={300} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
                <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Expected SIP Return</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{sipReturn}%</div>
             </div>
-            <input type="range" min="8" max="25" step="0.5" value={sipReturn} onChange={(e) => setSipReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="8" max="25" step="0.5" value={sipReturn} onChange={(e) => setSipReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
         </div>
         <div className="lg:col-span-5 relative">
-          <FadeIn delay={350} direction="zoom" className="bg-emerald-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/30 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
+          <FadeIn delay={350} direction="zoom" className="bg-blue-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-500/30 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
             
             <div className="space-y-6 relative z-10 mb-8">
               <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                <p className="text-[10px] sm:text-xs font-medium tracking-widest text-emerald-200 uppercase">Your Regular EMI</p>
+                <p className="text-[10px] sm:text-xs font-medium tracking-widest text-blue-200 uppercase">Your Regular EMI</p>
                 <p className="text-xl font-medium text-white">{formatCurrency(emi)}</p>
               </div>
               <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <div>
-                   <p className="text-[10px] sm:text-xs font-medium tracking-widest text-emerald-200 uppercase">{targetLabel}</p>
+                   <p className="text-[10px] sm:text-xs font-medium tracking-widest text-blue-200 uppercase">{targetLabel}</p>
                    <p className="text-[9px] text-zinc-400 mt-0.5">Corpus needed at year {targetTenure}</p>
                 </div>
                 <p className="text-xl font-medium text-zinc-300">{formatCurrency(targetCorpus)}</p>
@@ -3263,21 +3247,21 @@ const EarlyClosureWidget = () => {
             </div>
 
             <div className="pt-6 relative z-10">
-              <p className="text-[10px] sm:text-xs font-bold tracking-widest text-emerald-400 uppercase mb-3">Required Monthly SIP to close early</p>
+              <p className="text-[10px] sm:text-xs font-bold tracking-widest text-blue-400 uppercase mb-3">Required Monthly SIP to close early</p>
               <p className="text-5xl sm:text-6xl md:text-7xl font-light text-white tracking-tight leading-none mb-8">{formatCurrency(requiredSip)}</p>
               
               <div className="flex flex-col gap-3 mb-8">
-                <div className="inline-flex items-center gap-3 bg-emerald-900/50 border border-emerald-500/30 text-emerald-300 text-sm font-medium px-4 py-3 rounded-xl w-full">
+                <div className="inline-flex items-center gap-3 bg-blue-900/50 border border-blue-500/30 text-blue-300 text-sm font-medium px-4 py-3 rounded-xl w-full">
                   <Activity className="w-4 h-4 shrink-0" /> Save {yearsSaved} years of EMIs
                 </div>
-                <div className="inline-flex items-center gap-3 bg-green-900/50 border border-green-500/30 text-green-300 text-sm font-medium px-4 py-3 rounded-xl w-full">
+                <div className="inline-flex items-center gap-3 bg-sky-900/50 border border-sky-500/30 text-sky-300 text-sm font-medium px-4 py-3 rounded-xl w-full">
                   <Check className="w-4 h-4 shrink-0" /> Wealth Saved: {formatCurrency(totalSavings)}
                 </div>
               </div>
               
-              <GeoButton onClick={handleDownloadInitiate} className="relative z-10" wFull icon={Download}>
+              <BrandButton onClick={handleDownloadInitiate} className="relative z-10" wFull icon={Download}>
                 Download Strategy Report
-              </GeoButton>
+              </BrandButton>
             </div>
           </FadeIn>
         </div>
@@ -3316,9 +3300,9 @@ const FireCalculatorWidget = () => {
     <>
       <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 animate-in fade-in zoom-in-95 duration-500 text-left">
         <div className="lg:col-span-7 space-y-6 lg:space-y-8">
-          <div className="bg-green-50 border border-green-200 p-5 rounded-2xl mb-4 shadow-sm">
-            <p className="text-sm text-green-900 font-medium flex items-start gap-3">
-               <Map className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+          <div className="bg-sky-50 border border-sky-200 p-5 rounded-2xl mb-4 shadow-sm">
+            <p className="text-sm text-sky-900 font-medium flex items-start gap-3">
+               <Map className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
                Financial Independence, Retire Early. Calculate the exact corpus required to stop working and live purely off your portfolio yields.
             </p>
           </div>
@@ -3327,26 +3311,26 @@ const FireCalculatorWidget = () => {
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Current Monthly Expenses</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{formatCurrency(monthlyExpenses)}</div>
             </div>
-            <input type="range" min="20000" max="500000" step="5000" value={monthlyExpenses} onChange={(e) => setMonthlyExpenses(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-green-600" />
+            <input type="range" min="20000" max="500000" step="5000" value={monthlyExpenses} onChange={(e) => setMonthlyExpenses(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-sky-600" />
           </FadeIn>
           <FadeIn delay={200} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Years to Retirement</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{yearsToRetire} Years</div>
             </div>
-            <input type="range" min="1" max="40" step="1" value={yearsToRetire} onChange={(e) => setYearsToRetire(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-green-600" />
+            <input type="range" min="1" max="40" step="1" value={yearsToRetire} onChange={(e) => setYearsToRetire(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-sky-600" />
           </FadeIn>
           <FadeIn delay={300} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Expected Inflation</label>
-              <div className="text-xl sm:text-2xl font-light text-green-600 bg-green-50 px-4 py-2 rounded-xl border border-green-200 w-full sm:w-auto shadow-sm">{inflation}%</div>
+              <div className="text-xl sm:text-2xl font-light text-sky-600 bg-sky-50 px-4 py-2 rounded-xl border border-sky-200 w-full sm:w-auto shadow-sm">{inflation}%</div>
             </div>
-            <input type="range" min="3" max="12" step="0.5" value={inflation} onChange={(e) => setInflation(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-green-600" />
+            <input type="range" min="3" max="12" step="0.5" value={inflation} onChange={(e) => setInflation(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-sky-600" />
           </FadeIn>
         </div>
         <div className="lg:col-span-5 relative">
           <FadeIn delay={400} direction="zoom" className="bg-zinc-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-green-500/20 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-sky-500/20 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
             <div className="space-y-6 relative z-10 mb-10">
               <div className="bg-white/5 p-5 rounded-2xl backdrop-blur-sm border border-white/10">
                 <p className="text-[10px] sm:text-xs font-medium tracking-widest text-zinc-400 uppercase mb-2">Projected Future Monthly Expense</p>
@@ -3355,12 +3339,12 @@ const FireCalculatorWidget = () => {
               </div>
             </div>
             <div className="pt-8 border-t border-zinc-800 relative z-10">
-              <p className="text-[10px] sm:text-xs font-bold tracking-widest text-green-400 uppercase mb-3">Target F.I.R.E. Corpus</p>
+              <p className="text-[10px] sm:text-xs font-bold tracking-widest text-sky-400 uppercase mb-3">Target F.I.R.E. Corpus</p>
               <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none mb-4">{formatCurrency(requiredCorpus)}</p>
               
-              <GeoButton onClick={handleDownloadInitiate} className="mt-6 relative z-10" wFull icon={Download}>
+              <BrandButton onClick={handleDownloadInitiate} className="mt-6 relative z-10" wFull icon={Download}>
                 Download Strategy Report
-              </GeoButton>
+              </BrandButton>
             </div>
           </FadeIn>
         </div>
@@ -3403,21 +3387,21 @@ const LumpsumCalculatorWidget = () => {
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">One-time Investment</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{formatCurrency(lumpsum)}</div>
             </div>
-            <input type="range" min="10000" max="50000000" step="10000" value={lumpsum} onChange={(e) => setLumpsum(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="10000" max="50000000" step="10000" value={lumpsum} onChange={(e) => setLumpsum(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={200} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Investment Period</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{years} Years</div>
             </div>
-            <input type="range" min="1" max="40" step="1" value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="1" max="40" step="1" value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={300} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Expected Return (p.a)</label>
-              <div className="text-xl sm:text-2xl font-light text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 w-full sm:w-auto shadow-sm">{expectedReturn}%</div>
+              <div className="text-xl sm:text-2xl font-light text-blue-600 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 w-full sm:w-auto shadow-sm">{expectedReturn}%</div>
             </div>
-            <input type="range" min="5" max="25" step="0.5" value={expectedReturn} onChange={(e) => setExpectedReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="5" max="25" step="0.5" value={expectedReturn} onChange={(e) => setExpectedReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
         </div>
         <div className="lg:col-span-5 relative">
@@ -3429,16 +3413,16 @@ const LumpsumCalculatorWidget = () => {
               </div>
               <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
                 <p className="text-[10px] sm:text-xs font-medium tracking-widest text-zinc-400 uppercase mb-1">Wealth Gained</p>
-                <p className="text-xl sm:text-2xl font-light text-emerald-400">+{formatCurrency(wealthGained)}</p>
+                <p className="text-xl sm:text-2xl font-light text-blue-400">+{formatCurrency(wealthGained)}</p>
               </div>
             </div>
             <div className="pt-8 border-t border-zinc-800 relative z-10">
               <p className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-500 uppercase mb-3">Future Value</p>
               <p className="text-5xl sm:text-6xl md:text-7xl font-light text-white tracking-tight leading-none mb-8">{formatCurrency(maturityValue)}</p>
               
-              <GeoButton onClick={handleDownloadInitiate} className="relative z-10" wFull icon={Download}>
+              <BrandButton onClick={handleDownloadInitiate} className="relative z-10" wFull icon={Download}>
                 Download Strategy Report
-              </GeoButton>
+              </BrandButton>
             </div>
           </FadeIn>
         </div>
@@ -3481,39 +3465,39 @@ const GoalCalculatorWidget = () => {
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Target Goal Amount</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{formatCurrency(targetAmount)}</div>
             </div>
-            <input type="range" min="100000" max="100000000" step="100000" value={targetAmount} onChange={(e) => setTargetAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="100000" max="100000000" step="100000" value={targetAmount} onChange={(e) => setTargetAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={200} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Time to Goal</label>
               <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{years} Years</div>
             </div>
-            <input type="range" min="1" max="40" step="1" value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="1" max="40" step="1" value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
           <FadeIn delay={300} direction="left">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
               <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Expected Return (p.a)</label>
-              <div className="text-xl sm:text-2xl font-light text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 w-full sm:w-auto shadow-sm">{expectedReturn}%</div>
+              <div className="text-xl sm:text-2xl font-light text-blue-600 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 w-full sm:w-auto shadow-sm">{expectedReturn}%</div>
             </div>
-            <input type="range" min="5" max="25" step="0.5" value={expectedReturn} onChange={(e) => setExpectedReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            <input type="range" min="5" max="25" step="0.5" value={expectedReturn} onChange={(e) => setExpectedReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
           </FadeIn>
         </div>
         <div className="lg:col-span-5 relative">
-          <FadeIn delay={400} direction="zoom" className="bg-emerald-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
-             <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/30 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
+          <FadeIn delay={400} direction="zoom" className="bg-blue-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
+             <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-500/30 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
             <div className="space-y-6 relative z-10 mb-10">
               <div className="bg-white/5 p-5 rounded-2xl backdrop-blur-sm border border-white/10">
-                <p className="text-[10px] sm:text-xs font-medium tracking-widest text-emerald-200 uppercase mb-2">To reach your goal of</p>
+                <p className="text-[10px] sm:text-xs font-medium tracking-widest text-blue-200 uppercase mb-2">To reach your goal of</p>
                 <p className="text-2xl sm:text-3xl font-light text-white">{formatCurrency(targetAmount)}</p>
               </div>
             </div>
-            <div className="pt-8 border-t border-emerald-800/50 relative z-10">
-              <p className="text-[10px] sm:text-xs font-bold tracking-widest text-emerald-400 uppercase mb-3">Required Monthly SIP</p>
+            <div className="pt-8 border-t border-blue-800/50 relative z-10">
+              <p className="text-[10px] sm:text-xs font-bold tracking-widest text-blue-400 uppercase mb-3">Required Monthly SIP</p>
               <p className="text-5xl sm:text-6xl md:text-7xl font-light text-white tracking-tight leading-none mb-8">{formatCurrency(requiredSip)}</p>
               
-              <GeoButton onClick={handleDownloadInitiate} className="mt-8 relative z-10" wFull icon={Download}>
+              <BrandButton onClick={handleDownloadInitiate} className="mt-8 relative z-10" wFull icon={Download}>
                 Download Strategy Report
-              </GeoButton>
+              </BrandButton>
             </div>
           </FadeIn>
         </div>
@@ -3525,11 +3509,16 @@ const GoalCalculatorWidget = () => {
 
 // --- HOME PAGE COMPONENT ---
 const HomePage = ({ setCurrentPage, openContactModal }) => {
-  useSEO("Expert Financial Advisory", "Ask Geo is a premier financial advisory firm in Pune offering holistic wealth management, portfolio architecture, and precision financial calculators.", "home");
+  useSEO("Expert Financial Advisory", "Samruddhi Investments is a premier financial advisory firm offering holistic wealth management, portfolio architecture, and precision financial calculators.", "home");
+
+  // Hero Interactive State
+  const [heroSip, setHeroSip] = useState(25000);
+  const [heroYears, setHeroYears] = useState(15);
+  const heroFutureValue = heroSip * (((Math.pow(1 + (12/12/100), heroYears * 12) - 1) / (12/12/100)));
 
   const testimonials = [
     {
-      quote: "Geo didn't just give us a list of mutual funds; he built a complete financial architecture. For the first time, I understand exactly how my wealth is compounding.",
+      quote: "Samruddhi didn't just give us a list of mutual funds; they built a complete financial architecture. For the first time, I understand exactly how my wealth is compounding.",
       name: "Dr. Siddharth M.",
       title: "Medical Professional",
       rating: 5
@@ -3541,7 +3530,7 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
       rating: 5
     },
     {
-      quote: "Moving our portfolio to Ask Geo was the best financial decision we made. The data-driven precision and continuous active monitoring give us absolute peace of mind.",
+      quote: "Moving our portfolio to Samruddhi Investments was the best financial decision we made. The data-driven precision and continuous active monitoring give us absolute peace of mind.",
       name: "Vikram & Neha D.",
       title: "Corporate Executives",
       rating: 5
@@ -3551,265 +3540,269 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
   return (
     <>
       {/* --- Dynamic Hero Section --- */}
-      <section id="home" className="relative min-h-[100svh] lg:min-h-[100dvh] pt-28 sm:pt-32 lg:pt-28 pb-28 sm:pb-32 lg:pb-28 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto flex items-center overflow-hidden bg-zinc-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
-        {/* Soft Animated Background Orbs */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-200/30 rounded-full blur-[120px] -z-10 animate-blob"></div>
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-200/30 rounded-full blur-[100px] -z-10 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/4 w-[400px] h-[400px] bg-green-200/20 rounded-full blur-[100px] -z-10 animate-blob animation-delay-4000"></div>
+      <section id="home" className="relative min-h-[100svh] lg:min-h-[100dvh] pt-28 sm:pt-32 lg:pt-32 pb-32 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto flex items-center overflow-hidden bg-[#09090b]">
+        {/* Abstract Dark Background Elements */}
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-600/20 via-blue-900/5 to-transparent rounded-full blur-[80px] -z-10 animate-blob pointer-events-none"></div>
+        <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-indigo-600/20 via-blue-900/5 to-transparent rounded-full blur-[100px] -z-10 animate-blob animation-delay-2000 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wMykiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] -z-10"></div>
 
-        <div className="w-full max-w-[1800px] mx-auto flex flex-col lg:flex-row items-center gap-8 lg:gap-16 relative z-10">
-          <div className="lg:w-1/2 z-10 relative">
+        <div className="w-full max-w-[1800px] mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-20 relative z-10">
+          
+          {/* Left Copy */}
+          <div className="lg:w-1/2 z-10 relative text-left">
             <FadeIn delay={0} direction="down">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-emerald-100 shadow-sm text-emerald-700 text-[10px] sm:text-xs font-bold tracking-widest mb-8">
-                <Sparkles className="w-4 h-4 animate-pulse" strokeWidth={2} /> PRECISION WEALTH ARCHITECTURE
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[10px] sm:text-xs font-bold tracking-widest mb-8 shadow-[0_0_30px_rgba(59,130,246,0.15)]">
+                <Activity className="w-4 h-4 animate-pulse text-blue-400" strokeWidth={2} /> PRECISION WEALTH ENGINEERING
               </div>
             </FadeIn>
             
             <FadeIn delay={150} direction="right">
-              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-7xl xl:text-8xl font-light tracking-tighter leading-[1.05] text-zinc-950 mb-6">
-                For expert advice, <br />
-                <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">
-                  Ask Geo.
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-7xl xl:text-8xl font-light tracking-tighter leading-[1.05] text-white mb-6">
+                Math over <br />
+                <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">
+                  emotions.
                 </span>
               </h1>
             </FadeIn>
             
             <FadeIn delay={300} direction="right">
-              <p className="text-base sm:text-lg lg:text-xl text-zinc-600 mb-10 max-w-xl font-light leading-relaxed">
-                We build, manage, and preserve your wealth with highly customized, data-driven financial strategies. No guesswork, just math.
+              <p className="text-base sm:text-lg lg:text-xl text-zinc-400 mb-10 max-w-xl font-light leading-relaxed">
+                Samruddhi Investments replaces guesswork with rigorous data. We engineer, optimize, and actively manage portfolios for those who demand absolute clarity.
               </p>
             </FadeIn>
             
-            <FadeIn delay={450} direction="up">
-              <GeoButton onClick={() => openContactModal('Ask Geo Now')} icon={ArrowRight}>
-                Ask Geo Now
-              </GeoButton>
+            <FadeIn delay={450} direction="up" className="flex flex-col sm:flex-row gap-4">
+              <BrandButton variant="light" onClick={() => openContactModal('Consult Samruddhi')} icon={ArrowRight}>
+                Schedule a Consultation
+              </BrandButton>
+              <button onClick={() => { setCurrentPage('audit'); window.scrollTo(0,0); }} className="px-8 py-4 rounded-xl border border-zinc-700 bg-zinc-900/50 text-white font-medium hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2">
+                <ShieldCheck className="w-4 h-4" /> Free Portfolio Audit
+              </button>
             </FadeIn>
           </div>
 
-          {/* Hero Abstract Graphic */}
-          <div className="lg:w-1/2 relative w-full h-[380px] sm:h-[460px] lg:h-[calc(100dvh-230px)] lg:min-h-[480px] lg:max-h-[620px] mt-6 lg:mt-0 perspective-1000">
-            <FadeIn delay={600} direction="zoom" className="w-full h-full relative flex items-center justify-center">
-              
-              <div className="w-[85%] max-w-[300px] sm:max-w-[340px] lg:max-w-[380px] relative z-10">
-                <div className="w-full bg-white/80 backdrop-blur-xl border border-white/50 rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl shadow-emerald-900/10 p-8 sm:p-10 flex flex-col justify-between overflow-hidden group cursor-default">
-                  <div className="absolute -top-10 -right-10 opacity-5 transition-opacity duration-1000 group-hover:rotate-12">
-                     <TrendingUp className="w-48 h-48 sm:w-64 sm:h-64 text-zinc-900" strokeWidth={1} />
+          {/* Right Interactive Hero Widget */}
+          <div className="lg:w-1/2 w-full mt-8 lg:mt-0">
+            <FadeIn delay={600} direction="zoom" className="w-full relative">
+              <div className="bg-zinc-900/80 backdrop-blur-2xl border border-zinc-700/50 p-6 sm:p-10 rounded-[2.5rem] shadow-2xl shadow-blue-900/20">
+                <div className="flex items-center gap-3 mb-8 border-b border-zinc-800 pb-6">
+                  <div className="w-10 h-10 bg-blue-600/20 text-blue-400 rounded-xl flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5" />
                   </div>
-                  
-                  <div className="relative z-10">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-emerald-100 to-teal-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-8 sm:mb-10 shadow-inner transition-transform duration-500 group-hover:scale-110">
-                      <PieChart className="w-8 h-8 sm:w-10 sm:h-10" strokeWidth={1.5} />
-                    </div>
-                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-medium tracking-tight mb-3 text-zinc-900">Portfolio Metrics</h3>
-                    <p className="text-zinc-500 text-sm sm:text-base font-light mb-10 lg:mb-12">Historical data & active management</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 sm:gap-5 relative z-10">
-                    <div className="bg-zinc-50 p-5 sm:p-6 rounded-2xl border border-zinc-100 hover:bg-white hover:shadow-lg hover:shadow-zinc-200/50 transition-all duration-300">
-                      <p className="text-[10px] sm:text-xs font-bold text-zinc-400 tracking-widest uppercase mb-2">AUM</p>
-                      <p className="text-3xl sm:text-4xl lg:text-5xl font-light text-transparent bg-clip-text bg-gradient-to-br from-zinc-900 to-zinc-600">133K<span className="text-zinc-400 text-sm sm:text-base ml-1 font-medium">Cr</span></p>
-                    </div>
-                    <div className="bg-emerald-50 p-5 sm:p-6 rounded-2xl border border-emerald-100/50 hover:bg-emerald-100 hover:shadow-lg hover:shadow-emerald-200/50 transition-all duration-300">
-                      <p className="text-[10px] sm:text-xs font-bold text-emerald-600/70 tracking-widest uppercase mb-2">XIRR</p>
-                      <p className="text-3xl sm:text-4xl lg:text-5xl font-light text-emerald-700">+12%</p>
-                    </div>
+                  <div>
+                    <h3 className="text-white font-medium">Live Compounding Engine</h3>
+                    <p className="text-zinc-400 text-xs">Assuming 12% Historic Equity Average</p>
                   </div>
                 </div>
 
-                {/* Floating Card 1 */}
-                <div className="absolute -left-12 sm:-left-28 lg:-left-40 top-0 sm:top-8 lg:top-12 bg-zinc-900 border border-zinc-800 text-white p-4 sm:p-5 rounded-2xl shadow-2xl shadow-zinc-900/20 animate-float z-20 flex items-center gap-4 cursor-default w-max">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-emerald-900/50 flex items-center justify-center shrink-0 border border-emerald-500/20">
-                    <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400" strokeWidth={1.5} />
+                <div className="space-y-8">
+                  <div>
+                    <div className="flex justify-between text-sm mb-3">
+                      <span className="text-zinc-400 font-medium">Monthly Investment</span>
+                      <span className="text-white font-bold">{formatCurrency(heroSip)}</span>
+                    </div>
+                    <input type="range" min="5000" max="200000" step="1000" value={heroSip} onChange={(e) => setHeroSip(Number(e.target.value))} className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-500" />
                   </div>
-                  <div className="pr-4 sm:pr-6">
-                    <p className="text-[9px] sm:text-[10px] font-bold text-emerald-400 tracking-widest uppercase mb-1">Growth Engine</p>
-                    <p className="text-sm sm:text-base font-light text-white">Optimizing...</p>
+
+                  <div>
+                    <div className="flex justify-between text-sm mb-3">
+                      <span className="text-zinc-400 font-medium">Time Horizon</span>
+                      <span className="text-white font-bold">{heroYears} Years</span>
+                    </div>
+                    <input type="range" min="5" max="30" step="1" value={heroYears} onChange={(e) => setHeroYears(Number(e.target.value))} className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+                  </div>
+
+                  <div className="pt-6 border-t border-zinc-800">
+                    <p className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase mb-2">Projected Future Value</p>
+                    <p className="text-5xl sm:text-6xl font-light text-white tracking-tight">
+                      {formatCurrency(heroFutureValue)}
+                    </p>
+                    <div className="mt-4 flex gap-2">
+                       <span className="inline-block px-3 py-1 bg-zinc-800 text-zinc-300 text-xs rounded-lg">Principal: {formatCurrency(heroSip * heroYears * 12)}</span>
+                       <span className="inline-block px-3 py-1 bg-blue-900/30 text-blue-300 text-xs rounded-lg border border-blue-800/50">Wealth Gain: {formatCurrency(heroFutureValue - (heroSip * heroYears * 12))}</span>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Floating Card 2: Trust/Clients */}
-                <div className="absolute -right-12 sm:-right-28 lg:-right-40 top-[35%] lg:top-[40%] bg-white/90 backdrop-blur-md border border-zinc-200/50 p-4 sm:p-5 rounded-2xl shadow-xl animate-float-delayed z-20 flex items-center gap-4 cursor-default w-max">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-zinc-50 border border-zinc-200 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 text-zinc-600" strokeWidth={1.5} />
-                  </div>
-                  <div className="pr-4 sm:pr-6">
-                    <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 tracking-widest uppercase mb-1">Trust</p>
-                    <p className="text-sm sm:text-base font-medium text-zinc-900">26L+ Clients</p>
-                  </div>
-                </div>
-
-                {/* Floating Card 3: Live Sync */}
-                <div className="absolute -left-4 sm:-left-20 lg:-left-28 -bottom-4 sm:bottom-4 lg:-bottom-8 bg-white/90 backdrop-blur-md border border-emerald-100 p-4 sm:p-5 rounded-2xl shadow-xl shadow-emerald-900/5 animate-float-slow z-30 flex items-center gap-4 cursor-default w-max">
-                   <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-emerald-50 border border-emerald-200/50 flex items-center justify-center shrink-0">
-                    <Activity className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600" strokeWidth={1.5} />
-                  </div>
-                  <div className="pr-4 sm:pr-6">
-                    <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 tracking-widest uppercase mb-1">Live Sync</p>
-                    <p className="text-sm sm:text-base font-medium text-zinc-900">Market Data</p>
-                  </div>
+              {/* Floating aesthetic elements */}
+              <div className="absolute -left-6 -bottom-6 bg-white border border-zinc-200 p-4 rounded-2xl shadow-xl animate-float hidden sm:flex items-center gap-3">
+                <ShieldCheck className="w-8 h-8 text-blue-600" />
+                <div>
+                  <p className="text-zinc-900 font-bold text-sm">SEBI Registered</p>
+                  <p className="text-zinc-500 text-xs">Fiduciary Standard</p>
                 </div>
               </div>
             </FadeIn>
           </div>
+
         </div>
+
         {/* --- Hero Marquee Ticker --- */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 w-full bg-[#18181b] border-y border-zinc-800 py-3 overflow-hidden flex whitespace-nowrap">
-          <div className="animate-marquee flex gap-12 items-center text-[10px] sm:text-xs font-bold tracking-[0.2em] text-emerald-400/80 uppercase">
-            <span>Radical Transparency</span> <span className="text-zinc-700">•</span>
-            <span>Data-Backed Precision</span> <span className="text-zinc-700">•</span>
-            <span>Fiduciary Duty</span> <span className="text-zinc-700">•</span>
-            <span>Holistic Planning</span> <span className="text-zinc-700">•</span>
-            <span>133K Crore AUM</span> <span className="text-zinc-700">•</span>
-            <span>Market Agility</span> <span className="text-zinc-700">•</span>
-            <span>Radical Transparency</span> <span className="text-zinc-700">•</span>
-            <span>Data-Backed Precision</span> <span className="text-zinc-700">•</span>
-            <span>Fiduciary Duty</span> <span className="text-zinc-700">•</span>
-            <span>Holistic Planning</span> <span className="text-zinc-700">•</span>
-            <span>133K Crore AUM</span> <span className="text-zinc-700">•</span>
+        <div className="absolute bottom-0 left-0 right-0 z-20 w-full bg-blue-600 border-y border-blue-500 py-3 overflow-hidden flex whitespace-nowrap">
+          <div className="animate-marquee flex gap-12 items-center text-[10px] sm:text-xs font-bold tracking-[0.2em] text-white uppercase">
+            <span>Radical Transparency</span> <span className="text-blue-300">•</span>
+            <span>Data-Backed Precision</span> <span className="text-blue-300">•</span>
+            <span>Fiduciary Duty</span> <span className="text-blue-300">•</span>
+            <span>Holistic Planning</span> <span className="text-blue-300">•</span>
+            <span>500+ Crore AUM</span> <span className="text-blue-300">•</span>
+            <span>Market Agility</span> <span className="text-blue-300">•</span>
+            <span>Radical Transparency</span> <span className="text-blue-300">•</span>
+            <span>Data-Backed Precision</span> <span className="text-blue-300">•</span>
+            <span>Fiduciary Duty</span> <span className="text-blue-300">•</span>
+            <span>Holistic Planning</span> <span className="text-blue-300">•</span>
+            <span>500+ Crore AUM</span> <span className="text-blue-300">•</span>
             <span>Market Agility</span>
           </div>
         </div>
       </section>
 
-
-      {/* --- Clean Divider Stats --- */}
-      <section className="bg-white py-16 lg:py-24 border-b border-zinc-200/50">
-        <div className="w-full max-w-[1800px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-24 grid sm:grid-cols-2 lg:grid-cols-3 gap-10 sm:gap-12 divide-y sm:divide-y-0 sm:divide-x divide-zinc-200">
-          <FadeIn delay={100} direction="up" className="py-4 sm:pr-8 text-left">
-            <h4 className="text-5xl sm:text-6xl lg:text-7xl font-light tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-zinc-900 to-zinc-500 mb-2">
-              <AnimatedNumber end={26} suffix="L+" />
+      {/* --- Pulled-up Stats Divider --- */}
+      <section className="bg-white relative z-20 border-b border-zinc-200 shadow-sm">
+        <div className="w-full max-w-[1800px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-24 grid sm:grid-cols-2 lg:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-zinc-100">
+          <FadeIn delay={100} direction="up" className="py-10 sm:pr-10 text-center sm:text-left flex flex-col items-center sm:items-start">
+            <h4 className="text-5xl sm:text-6xl font-light tracking-tighter text-zinc-900 mb-2">
+              <AnimatedNumber end={10} suffix="K+" />
             </h4>
-            <p className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-400 uppercase">Active Investors</p>
+            <p className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-500 uppercase flex items-center gap-2"><Users className="w-4 h-4"/> Active Investors</p>
           </FadeIn>
-          <FadeIn delay={250} direction="up" className="py-8 sm:py-4 sm:px-8 text-left">
-            <h4 className="text-5xl sm:text-6xl lg:text-7xl font-light tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-zinc-900 to-zinc-500 mb-2">
-              <AnimatedNumber end={133} suffix="K" />
+          <FadeIn delay={200} direction="up" className="py-10 sm:px-10 text-center sm:text-left flex flex-col items-center sm:items-start">
+            <h4 className="text-5xl sm:text-6xl font-light tracking-tighter text-zinc-900 mb-2">
+              <AnimatedNumber end={500} suffix="+" />
             </h4>
-            <p className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-400 uppercase">Crore AUM</p>
+            <p className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-500 uppercase flex items-center gap-2"><Briefcase className="w-4 h-4"/> Crore AUM</p>
           </FadeIn>
-          <FadeIn delay={400} direction="up" className="py-8 sm:py-4 sm:pl-8 text-left sm:col-span-2 lg:col-span-1 sm:border-t lg:border-t-0 sm:pt-8 lg:pt-4">
-            <h4 className="text-5xl sm:text-6xl lg:text-7xl font-light tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-emerald-500 to-teal-400 mb-2">
+          <FadeIn delay={300} direction="up" className="py-10 sm:pl-10 text-center sm:text-left sm:col-span-2 lg:col-span-1 sm:border-t lg:border-t-0 flex flex-col items-center sm:items-start">
+            <h4 className="text-5xl sm:text-6xl font-light tracking-tighter text-blue-600 mb-2">
               <AnimatedNumber end={12} suffix="%" />
             </h4>
-            <p className="text-[10px] sm:text-xs font-bold tracking-widest text-emerald-600 uppercase">Historic XIRR</p>
+            <p className="text-[10px] sm:text-xs font-bold tracking-widest text-blue-600 uppercase flex items-center gap-2"><Activity className="w-4 h-4"/> Historic XIRR</p>
           </FadeIn>
         </div>
       </section>
 
       {/* --- Trust / Accreditations --- */}
-      <section className="py-12 bg-zinc-50 border-b border-zinc-200/50 overflow-hidden flex flex-col items-center">
-        <p className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-400 uppercase mb-8 text-center">Certified & Partnered Across the Financial Ecosystem</p>
-        <div className="flex flex-wrap justify-center items-center gap-8 sm:gap-16 opacity-50 hover:opacity-100 grayscale hover:grayscale-0 transition-all duration-700">
-           <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-zinc-800 tracking-tight"><ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-600"/> AMFI</div>
-           <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-zinc-800 tracking-tight"><TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-600"/> BSE Star MF</div>
-           <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-zinc-800 tracking-tight"><Map className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-600"/> NSE NMF II</div>
-           <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-zinc-800 tracking-tight"><Activity className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-600"/> CDSL</div>
+      <section className="py-10 bg-zinc-50 border-b border-zinc-200/50 overflow-hidden flex flex-col items-center">
+        <div className="flex flex-wrap justify-center items-center gap-8 sm:gap-16 opacity-60 hover:opacity-100 grayscale hover:grayscale-0 transition-all duration-500">
+           <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-zinc-800 tracking-tight"><ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600"/> AMFI Registered</div>
+           <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-zinc-800 tracking-tight"><TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600"/> BSE Star MF</div>
+           <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-zinc-800 tracking-tight"><Map className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600"/> NSE NMF II</div>
+           <div className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-zinc-800 tracking-tight"><Lock className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600"/> CDSL Secure</div>
         </div>
       </section>
 
-      {/* --- Core Philosophy --- */}
-      <section className="bg-emerald-50/20 py-24 sm:py-32 lg:py-40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full">
-        <div className="max-w-[1800px] mx-auto">
-          <FadeIn className="mb-16 max-w-3xl text-left">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-6 text-zinc-900">Our Core Philosophy</h2>
-            <p className="text-base sm:text-lg lg:text-xl text-zinc-600 font-light leading-relaxed">
-              We operate on principles that prioritize your long-term security, utilizing data-driven precision to eliminate guesswork from your financial future.
-            </p>
+      {/* --- NEW: The Samruddhi Edge (Comparison) --- */}
+      <section className="py-24 sm:py-32 bg-white px-6 sm:px-10 lg:px-16 xl:px-24 border-b border-zinc-200">
+        <div className="max-w-[1400px] mx-auto">
+          <FadeIn direction="up" className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-light tracking-tighter text-zinc-900 mb-6">The Industry Standard vs. <span className="font-medium text-blue-600">The Samruddhi Standard</span></h2>
+            <p className="text-zinc-500 text-lg max-w-2xl mx-auto font-light">Why families and professionals are moving their portfolios to a more mathematical, transparent architecture.</p>
           </FadeIn>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12">
-            {[
-              { icon: Target, title: "Absolute Precision", desc: "Every portfolio is mathematically optimized to align perfectly with your risk appetite and timelines." },
-              { icon: ShieldCheck, title: "Unwavering Trust", desc: "100% transparency in fee structures and investment logic. We win only when your portfolio wins." },
-              { icon: Zap, title: "Dynamic Agility", desc: "Market conditions change rapidly. Our strategies adapt in real-time to protect and grow your wealth." }
-            ].map((item, idx) => (
-              <FadeIn key={idx} delay={idx * 200} direction="zoom" className="group text-left bg-white p-8 sm:p-10 rounded-[2.5rem] border border-zinc-200 hover:border-emerald-200 shadow-lg shadow-zinc-200/20 hover:shadow-2xl hover:shadow-emerald-900/10 hover:bg-gradient-to-b hover:from-white hover:to-emerald-50/50 transition-all duration-500">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-zinc-50 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-emerald-100 group-hover:scale-110 transition-all duration-500 border border-zinc-100 group-hover:border-emerald-200">
-                  <item.icon className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-500 group-hover:text-emerald-600 transition-colors duration-500" strokeWidth={1.5} />
+
+          <div className="grid md:grid-cols-2 gap-8 lg:gap-0 lg:rounded-[3rem] overflow-hidden lg:border lg:border-zinc-200 lg:shadow-2xl lg:shadow-zinc-200/50">
+            {/* Traditional Side */}
+            <FadeIn direction="right" delay={100} className="bg-zinc-50 p-10 lg:p-16 border border-zinc-200 lg:border-none rounded-[2rem] lg:rounded-none">
+              <div className="flex items-center gap-3 mb-10 opacity-60">
+                <X className="w-6 h-6 text-zinc-500" />
+                <h3 className="text-2xl font-medium text-zinc-500">Traditional Advisory</h3>
+              </div>
+              <ul className="space-y-8">
+                {[
+                  "Product-pushing based on high hidden commissions.",
+                  "Emotional, intuition-based market timing.",
+                  "One-size-fits-all generic mutual fund lists.",
+                  "Opaque reporting and confusing statements.",
+                  "Reactive to market crashes with no pre-planned hedge."
+                ].map((text, i) => (
+                  <li key={i} className="flex gap-4 text-zinc-500">
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 shrink-0 mt-2"></span>
+                    <span className="font-light leading-relaxed">{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </FadeIn>
+
+            {/* Samruddhi Side */}
+            <FadeIn direction="left" delay={200} className="bg-[#09090b] text-white p-10 lg:p-16 rounded-[2rem] lg:rounded-none relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/20 rounded-full blur-[80px] pointer-events-none"></div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-10">
+                  <Check className="w-6 h-6 text-blue-400" strokeWidth={3} />
+                  <h3 className="text-2xl font-medium text-white">Samruddhi Architecture</h3>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-medium tracking-tight mb-4 text-zinc-900">{item.title}</h3>
-                <p className="text-zinc-500 font-light text-sm sm:text-base leading-relaxed">{item.desc}</p>
-              </FadeIn>
-            ))}
+                <ul className="space-y-8">
+                  {[
+                    "Fiduciary duty first. 100% radical transparency on fees.",
+                    "Mathematical, quantitative modeling to eliminate emotion.",
+                    "Bespoke asset allocation aligned to specific life goals.",
+                    "Live, crystal-clear dashboards tracking real XIRR.",
+                    "Proactive downside protection and dynamic rebalancing."
+                  ].map((text, i) => (
+                    <li key={i} className="flex gap-4 text-zinc-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 mt-2 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
+                      <span className="font-light leading-relaxed">{text}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-12 pt-8 border-t border-zinc-800">
+                  <button onClick={() => openContactModal('Switch to Samruddhi')} className="text-blue-400 font-medium flex items-center gap-2 hover:text-blue-300 transition-colors">
+                    Make the switch <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </FadeIn>
           </div>
         </div>
       </section>
 
-      {/* --- Philosophy Section --- */}
-      <section id="about" className="py-24 sm:py-32 lg:py-40 bg-white px-6 sm:px-10 lg:px-16 xl:px-24 text-left border-y border-zinc-200">
-        <div className="w-full max-w-[1800px] mx-auto grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-          <div>
-            <FadeIn direction="left">
-              <h2 className="text-4xl sm:text-5xl lg:text-7xl font-light tracking-tighter mb-8 leading-[1.05] text-zinc-900">
-                Let's talk about <br/><span className="font-medium text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">wealth.</span>
-              </h2>
-            </FadeIn>
-            <FadeIn delay={150} direction="left">
-              <p className="text-zinc-600 text-base sm:text-lg lg:text-xl font-light leading-relaxed mb-8">
-                Wealth is not just about accumulating assets, but managing them in a way that aligns with your values. It requires a personalized plan factoring in risk tolerance, goals, and life circumstances.
-              </p>
-            </FadeIn>
-            <FadeIn delay={300} direction="left">
-              <blockquote className="border-l-4 border-emerald-500 pl-6 py-2 mb-10 text-lg sm:text-xl font-normal text-zinc-800 leading-relaxed bg-emerald-50/50 rounded-r-xl">
-                "The ‘know-nothing’ investor should practice diversification, but it is crazy if you are an expert."
-              </blockquote>
-            </FadeIn>
-            <FadeIn delay={450} direction="left">
-              <GeoButton onClick={() => openContactModal('Let\'s Build Wealth')} icon={ArrowRight}>
-                Let's Build Wealth
-              </GeoButton>
-            </FadeIn>
-          </div>
-          
-          <div className="grid sm:grid-cols-2 gap-6 relative">
-            <div className="absolute inset-0 bg-emerald-100/30 blur-[100px] rounded-full z-0 pointer-events-none"></div>
-            <FadeIn delay={200} direction="zoom" className="space-y-6 sm:pt-12 relative z-10">
-              <div className="bg-white/80 backdrop-blur-sm border border-zinc-100 rounded-[2rem] p-8 sm:p-10 transition-all duration-500 shadow-xl shadow-zinc-200/40 hover:border-emerald-200 hover:shadow-emerald-100 group cursor-default">
-                <PieChart className="text-emerald-500 w-8 h-8 mb-6 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
-                <h4 className="font-medium text-xl mb-2 text-zinc-900">Mutual Funds</h4>
-                <p className="text-zinc-500 text-sm font-light leading-relaxed">Expertly curated schemes for optimal growth.</p>
-              </div>
-              <div className="bg-white/80 backdrop-blur-sm border border-zinc-100 rounded-[2rem] p-8 sm:p-10 transition-all duration-500 shadow-xl shadow-zinc-200/40 hover:border-emerald-200 hover:shadow-emerald-100 group cursor-default">
-                <TrendingUp className="text-emerald-500 w-8 h-8 mb-6 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
-                <h4 className="font-medium text-xl mb-2 text-zinc-900">Equity & ETFs</h4>
-                <p className="text-zinc-500 text-sm font-light leading-relaxed">Direct market participation with strategy.</p>
-              </div>
-            </FadeIn>
-            <FadeIn delay={400} direction="zoom" className="space-y-6 relative z-10">
-              <div className="bg-white/80 backdrop-blur-sm border border-zinc-100 rounded-[2rem] p-8 sm:p-10 transition-all duration-500 shadow-xl shadow-zinc-200/40 hover:border-emerald-200 hover:shadow-emerald-100 group cursor-default">
-                <ShieldCheck className="text-emerald-500 w-8 h-8 mb-6 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
-                <h4 className="font-medium text-xl mb-2 text-zinc-900">Bonds & FD</h4>
-                <p className="text-zinc-500 text-sm font-light leading-relaxed">Secure, fixed-income instruments.</p>
-              </div>
-              <div className="bg-[#18181b] rounded-[2rem] p-8 sm:p-10 text-white flex flex-col justify-center min-h-[200px] shadow-2xl shadow-zinc-900/30 group cursor-default">
-                <h4 className="font-light text-5xl sm:text-6xl mb-2 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">12%</h4>
-                <p className="text-zinc-400 font-bold tracking-widest text-[10px] sm:text-xs uppercase group-hover:text-emerald-400 transition-colors">Historic XIRR</p>
-              </div>
-            </FadeIn>
+      {/* --- NEW: Methodology Steps --- */}
+      <section className="bg-zinc-50 py-24 sm:py-32 px-6 sm:px-10 lg:px-16 xl:px-24 border-b border-zinc-200">
+        <div className="max-w-[1800px] mx-auto">
+          <FadeIn direction="up" className="mb-20 text-center">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-4 text-zinc-900">How We Build Wealth</h2>
+            <p className="text-base sm:text-lg text-zinc-500 font-light max-w-2xl mx-auto">A systematic, friction-free four-step protocol designed to transition you into a fully optimized portfolio.</p>
+          </FadeIn>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 relative">
+             <div className="hidden lg:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-blue-100 via-blue-200 to-blue-100 -translate-y-1/2 z-0"></div>
+             {[
+               { icon: Compass, title: "01. Discovery", desc: "A deep dive into your current assets, cash flows, and life aspirations." },
+               { icon: Activity, title: "02. Audit", desc: "Our engine analyzes your existing portfolio for inefficiencies and hidden risks." },
+               { icon: Layers, title: "03. Architecture", desc: "We present a mathematical, newly structured portfolio blueprint." },
+               { icon: ShieldCheck, title: "04. Execution", desc: "Seamless deployment and the start of 24/7 active monitoring." }
+             ].map((item, i) => (
+               <FadeIn key={i} delay={i * 150} direction="up" className="relative z-10 flex flex-col items-center text-center">
+                 <div className="w-20 h-20 bg-white shadow-xl shadow-zinc-200/50 border border-zinc-100 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group hover:scale-110 transition-transform duration-300">
+                   <item.icon className="w-8 h-8" strokeWidth={1.5} />
+                 </div>
+                 <h4 className="text-xl font-medium mb-3 text-zinc-900">{item.title}</h4>
+                 <p className="text-zinc-500 font-light text-sm leading-relaxed px-4">{item.desc}</p>
+               </FadeIn>
+             ))}
           </div>
         </div>
       </section>
 
       {/* --- Services Section --- */}
-      <section id="services" className="bg-emerald-50/30 py-24 sm:py-32 lg:py-40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full text-left">
+      <section id="services" className="bg-white py-24 sm:py-32 lg:py-40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full text-left">
         <div className="max-w-[1800px] mx-auto">
           <FadeIn direction="up" className="mb-16 max-w-3xl">
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tighter mb-6 text-zinc-900">Our Expertise</h2>
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tighter mb-6 text-zinc-900">Core Expertise</h2>
               <p className="text-base sm:text-lg lg:text-xl text-zinc-600 font-light leading-relaxed">
-                As a financial advisor, I offer a range of services designed to help my clients achieve their ultimate financial freedom.
+                As fiduciary advisors, we offer a comprehensive suite of services designed to build, manage, and preserve your wealth across generations.
               </p>
           </FadeIn>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
             {[
-              { title: "Wealth Management", icon: Briefcase, desc: "Building and preserving wealth through personalized, high-yield management strategies." },
-              { title: "Portfolio Management", icon: TrendingUp, desc: "Recommending and adjusting the diversity of investments to ensure the best possible long-term outcome." },
-              { title: "Insurance Management", icon: ShieldCheck, desc: "Managing risk by assessing needs, identifying coverage gaps and recommending policies." }
+              { title: "Wealth Management", icon: Briefcase, desc: "Building and preserving wealth through personalized, high-yield management strategies tailored to your goals. Goal-based SIP structuring and lumpsum deployment." },
+              { title: "Portfolio Management", icon: TrendingUp, desc: "For HNIs requiring active oversight. We utilize macro-economic research to actively rebalance and optimize your exposure to Equity, Debt, and Alternative assets." },
+              { title: "Insurance & Risk", icon: ShieldCheck, desc: "Managing life's uncertainties by rigorously assessing needs, identifying dangerous coverage gaps, and recommending pure-protection policies without mixing investment." }
             ].map((service, idx) => (
               <FadeIn key={idx} delay={idx * 200} direction="zoom" className="group">
-                <div className="bg-white border border-zinc-200 p-10 sm:p-12 rounded-[2.5rem] transition-all duration-500 h-full flex flex-col hover:border-emerald-200 hover:shadow-xl hover:shadow-zinc-200/50">
-                  <div className="w-16 h-16 bg-zinc-50 border border-zinc-200 rounded-2xl flex items-center justify-center mb-8 shadow-inner transition-all duration-500 group-hover:scale-110 group-hover:bg-[#18181b] group-hover:text-white group-hover:border-[#18181b]">
-                    <service.icon className="w-7 h-7 text-[#18181b] transition-colors duration-500 group-hover:text-white" strokeWidth={1.5} />
+                <div className="bg-zinc-50 border border-zinc-200 p-10 sm:p-12 rounded-[2.5rem] transition-all duration-500 h-full flex flex-col hover:bg-white hover:border-blue-200 hover:shadow-2xl hover:shadow-blue-900/10">
+                  <div className="w-16 h-16 bg-white border border-zinc-200 rounded-2xl flex items-center justify-center mb-8 shadow-sm transition-all duration-500 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600">
+                    <service.icon className="w-7 h-7 text-blue-600 transition-colors duration-500 group-hover:text-white" strokeWidth={1.5} />
                   </div>
                   <h3 className="text-2xl sm:text-3xl font-medium tracking-tight mb-4 text-zinc-900">{service.title}</h3>
                   <p className="text-zinc-500 font-light text-base leading-relaxed mt-auto">{service.desc}</p>
@@ -3821,54 +3814,55 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
       </section>
 
       {/* --- Interactive Tools Teaser --- */}
-      <section className="py-24 sm:py-32 lg:py-40 bg-zinc-50 text-zinc-900 px-6 sm:px-10 lg:px-16 xl:px-24 relative overflow-hidden text-left border-y border-zinc-200/50 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMCwgMCwgMCwgMC4wNSkiLz48L3N2Zz4=')]">
+      <section className="py-24 sm:py-32 lg:py-40 bg-blue-900 text-white px-6 sm:px-10 lg:px-16 xl:px-24 relative overflow-hidden text-left border-y border-blue-950">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wNSkiLz48L3N2Zz4=')] opacity-30"></div>
         <div className="w-full max-w-[1800px] mx-auto flex flex-col lg:flex-row items-center gap-16 lg:gap-24 relative z-10">
           <div className="w-full lg:w-1/2">
             <FadeIn direction="left" className="max-w-xl">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100/50 border border-emerald-200/50 text-emerald-700 text-[10px] sm:text-xs font-bold tracking-widest mb-8 shadow-sm">
-                <Calculator className="w-4 h-4" strokeWidth={2} /> INTERACTIVE TOOLS
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-blue-200 text-[10px] sm:text-xs font-bold tracking-widest mb-8 backdrop-blur-sm">
+                <Calculator className="w-4 h-4" strokeWidth={2} /> 12+ INTERACTIVE TOOLS
               </div>
               <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tighter mb-6 leading-[1.1]">
-                Visualize your <br/><span className="font-medium text-emerald-600">financial trajectory.</span>
+                Visualize your <br/><span className="font-medium text-blue-400">financial trajectory.</span>
               </h2>
-              <p className="text-zinc-600 text-base sm:text-lg lg:text-xl font-light leading-relaxed mb-10">
-                Don't guess your future. Use our advanced SIP, Lumpsum, and Retirement calculators to mathematically map out your path to financial freedom.
+              <p className="text-blue-100/70 text-base sm:text-lg lg:text-xl font-light leading-relaxed mb-10">
+                Don't guess your future. Use our advanced calculators to map out STP, Lumpsum, Step-Up SIPs, Zero-Cost EMIs, and your exact path to F.I.R.E.
               </p>
-              <GeoButton onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} icon={ArrowRight}>
-                Try Calculators
-              </GeoButton>
+              <BrandButton variant="light" onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} icon={ArrowRight}>
+                Explore Calculators
+              </BrandButton>
             </FadeIn>
           </div>
           <div className="w-full lg:w-1/2 relative">
-            <div className="absolute inset-0 bg-emerald-300/20 blur-[100px] rounded-full z-0 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-blue-500/20 blur-[100px] rounded-full z-0 pointer-events-none"></div>
             <FadeIn delay={300} direction="zoom" className="relative z-10">
-              <div className="bg-white/90 backdrop-blur-md border border-white/50 p-8 sm:p-10 lg:p-12 rounded-[2.5rem] shadow-2xl shadow-emerald-900/10 ring-1 ring-zinc-200 hover:ring-emerald-500/30 transition-all duration-700">
-                <div className="flex justify-between items-center mb-8 border-b border-zinc-100 pb-6">
+              <div className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 p-8 sm:p-10 lg:p-12 rounded-[2.5rem] shadow-2xl">
+                <div className="flex justify-between items-center mb-8 border-b border-zinc-800 pb-6">
                   <div>
-                    <h4 className="text-xl sm:text-2xl font-medium text-zinc-900 mb-2">SIP Calculator Pro</h4>
-                    <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest">Projected Growth</p>
+                    <h4 className="text-xl sm:text-2xl font-medium text-white mb-2">Goal Mapping Engine</h4>
+                    <p className="text-[10px] sm:text-xs font-bold text-blue-400 uppercase tracking-widest">Required SIP Analysis</p>
                   </div>
-                  <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
-                    <BarChart3 className="w-6 h-6 text-emerald-600" strokeWidth={2} />
+                  <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                    <Target className="w-6 h-6 text-blue-400" strokeWidth={2} />
                   </div>
                 </div>
                 <div className="space-y-8">
                   <div>
-                    <div className="flex justify-between text-sm sm:text-base mb-3"><span className="text-zinc-500 font-light">Monthly Investment</span><span className="text-zinc-900 font-medium">₹25,000</span></div>
-                    <div className="w-full h-2.5 bg-zinc-100 rounded-full overflow-hidden shadow-inner">
-                      <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full w-1/3 relative"><div className="absolute inset-0 bg-white/20 animate-pulse"></div></div>
+                    <div className="flex justify-between text-sm sm:text-base mb-3"><span className="text-zinc-400 font-light">Target Corpus Needed</span><span className="text-white font-medium">₹1,00,00,000</span></div>
+                    <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-500 rounded-full w-[80%] relative"><div className="absolute inset-0 bg-white/20 animate-pulse"></div></div>
                     </div>
                   </div>
                   <div>
-                    <div className="flex justify-between text-sm sm:text-base mb-3"><span className="text-zinc-500 font-light">Time Period</span><span className="text-zinc-900 font-medium">15 Years</span></div>
-                    <div className="w-full h-2.5 bg-zinc-100 rounded-full overflow-hidden shadow-inner">
-                      <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full w-1/2 relative"><div className="absolute inset-0 bg-white/20 animate-pulse"></div></div>
+                    <div className="flex justify-between text-sm sm:text-base mb-3"><span className="text-zinc-400 font-light">Time to Retire</span><span className="text-white font-medium">10 Years</span></div>
+                    <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-400 rounded-full w-[40%] relative"><div className="absolute inset-0 bg-white/20 animate-pulse"></div></div>
                     </div>
                   </div>
-                  <div className="pt-8 mt-8 border-t border-zinc-100">
-                    <p className="text-zinc-400 font-bold tracking-widest text-[10px] sm:text-xs mb-3 uppercase">Estimated Future Value</p>
-                    <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-zinc-900">
-                      ₹<AnimatedNumber end={1.26} decimals={2} duration={2500} /> <span className="text-3xl text-zinc-400">Cr.</span>
+                  <div className="pt-8 mt-8 border-t border-zinc-800">
+                    <p className="text-zinc-500 font-bold tracking-widest text-[10px] sm:text-xs mb-3 uppercase">Required Monthly SIP</p>
+                    <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white">
+                      ₹43,041
                     </p>
                   </div>
                 </div>
@@ -3878,12 +3872,51 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
         </div>
       </section>
 
+      {/* --- NEW: Insights Preview Section --- */}
+      <section className="py-24 sm:py-32 bg-zinc-50 px-6 sm:px-10 lg:px-16 xl:px-24 border-b border-zinc-200">
+        <div className="max-w-[1800px] mx-auto">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+            <FadeIn direction="right">
+              <h2 className="text-4xl sm:text-5xl font-light tracking-tighter text-zinc-900 mb-4">Market <span className="font-medium text-blue-600">Intelligence</span></h2>
+              <p className="text-zinc-500 text-lg font-light">Latest perspectives from the Samruddhi research desk.</p>
+            </FadeIn>
+            <FadeIn direction="left" delay={150}>
+              <button onClick={() => { setCurrentPage('insights'); window.scrollTo(0,0); }} className="text-blue-600 font-medium flex items-center gap-2 hover:text-blue-700 transition-colors">
+                View all analysis <ArrowRight className="w-4 h-4" />
+              </button>
+            </FadeIn>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Hardcoded preview of top 3 insights for the home page layout */}
+            {[
+              { title: "The Impact of Global Rates on Indian Equities", cat: "Macroeconomics", date: "April 2026" },
+              { title: "Debt Market Opportunities in a Shifting Cycle", cat: "Debt Strategy", date: "March 2026" },
+              { title: "Why Flexi-Cap Strategies Matter Right Now", cat: "Mutual Funds", date: "January 2026" }
+            ].map((post, idx) => (
+              <FadeIn key={idx} delay={idx * 150} direction="up">
+                <div onClick={() => { setCurrentPage('insights'); window.scrollTo(0,0); }} className="bg-white p-8 rounded-[2rem] border border-zinc-200 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300 group cursor-pointer h-full flex flex-col">
+                  <div className="flex justify-between items-center mb-6">
+                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">{post.cat}</span>
+                    <span className="text-xs text-zinc-400 font-medium">{post.date}</span>
+                  </div>
+                  <h3 className="text-xl font-medium text-zinc-900 mb-6 leading-snug group-hover:text-blue-700 transition-colors">{post.title}</h3>
+                  <div className="mt-auto pt-6 border-t border-zinc-100 flex items-center text-sm font-medium text-zinc-500 group-hover:text-blue-600 transition-colors">
+                    Read brief <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* --- Testimonials --- */}
       <section className="py-24 sm:py-32 lg:py-40 bg-white px-6 sm:px-10 lg:px-16 xl:px-24 text-left border-b border-zinc-200/50">
         <div className="w-full max-w-[1800px] mx-auto">
           <FadeIn direction="up" className="mb-16 max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] sm:text-xs font-bold tracking-widest mb-6 shadow-sm">
-                <Star className="w-4 h-4 fill-emerald-500 text-emerald-500" /> CLIENT STORIES
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-[10px] sm:text-xs font-bold tracking-widest mb-6 shadow-sm">
+                <Star className="w-4 h-4 fill-blue-500 text-blue-500" /> CLIENT STORIES
               </div>
               <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tighter mb-6 text-zinc-900">Don't just take <br/>our word for it.</h2>
               <p className="text-base sm:text-lg lg:text-xl text-zinc-600 font-light leading-relaxed">
@@ -3893,18 +3926,18 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {testimonials.map((testimonial, idx) => (
               <FadeIn key={idx} delay={idx * 150} direction="zoom">
-                <div className="bg-white border border-zinc-200 p-8 sm:p-10 rounded-[2.5rem] shadow-xl shadow-zinc-200/30 hover:shadow-2xl hover:border-emerald-200 transition-all duration-500 flex flex-col h-full justify-between group">
+                <div className="bg-zinc-50 border border-zinc-200 p-8 sm:p-10 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:bg-white hover:border-blue-200 transition-all duration-500 flex flex-col h-full justify-between group">
                   <div>
                     <div className="flex gap-1 mb-6">
                       {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="w-5 h-5 fill-emerald-500 text-emerald-500 group-hover:scale-110 transition-transform duration-300" style={{ transitionDelay: `${i * 50}ms` }} />
+                        <Star key={i} className="w-5 h-5 fill-blue-500 text-blue-500 group-hover:scale-110 transition-transform duration-300" style={{ transitionDelay: `${i * 50}ms` }} />
                       ))}
                     </div>
                     <p className="text-zinc-700 text-base sm:text-lg font-light leading-relaxed mb-8 italic">
                       "{testimonial.quote}"
                     </p>
                   </div>
-                  <div className="pt-6 border-t border-zinc-100">
+                  <div className="pt-6 border-t border-zinc-200">
                     <h4 className="text-lg font-medium text-zinc-900">{testimonial.name}</h4>
                     <p className="text-xs font-bold tracking-widest text-zinc-400 uppercase mt-1">{testimonial.title}</p>
                   </div>
@@ -3916,25 +3949,25 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
       </section>
 
       {/* --- Pre-Footer CTA --- */}
-      <section className="bg-[#18181b] py-24 sm:py-32 lg:py-40 px-6 sm:px-10 lg:px-16 xl:px-24 relative overflow-hidden text-left">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-900/30 rounded-full blur-[150px] -z-10 pointer-events-none"></div>
+      <section className="bg-[#09090b] py-24 sm:py-32 lg:py-40 px-6 sm:px-10 lg:px-16 xl:px-24 relative overflow-hidden text-left">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-600/20 to-transparent rounded-full blur-[100px] -z-10 pointer-events-none"></div>
         <div className="w-full max-w-[1800px] mx-auto relative z-10 flex flex-col items-center text-center">
           <FadeIn direction="up" className="flex flex-col items-center max-w-4xl">
-            <div className="w-20 h-20 bg-white/5 backdrop-blur-md rounded-3xl flex items-center justify-center mb-10 border border-white/10 shadow-2xl">
-              <TrendingUp className="w-10 h-10 text-emerald-400" strokeWidth={1.5} />
+            <div className="w-20 h-20 bg-blue-900/30 backdrop-blur-md rounded-3xl flex items-center justify-center mb-10 border border-blue-500/20 shadow-2xl">
+              <ShieldCheck className="w-10 h-10 text-blue-400" strokeWidth={1.5} />
             </div>
             <h2 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-light tracking-tighter text-white mb-8 leading-[1.05]">
               Ready to build your <br />
-              <span className="font-medium text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
+              <span className="font-medium text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">
                 financial fortress?
               </span>
             </h2>
             <p className="text-lg sm:text-xl lg:text-2xl text-zinc-400 font-light mb-12 leading-relaxed">
-              Join over 26 Lakh investors who trust Ask Geo to navigate the complexities of wealth creation and preservation.
+              Join thousands of investors who trust Samruddhi Investments to navigate the complexities of wealth creation and preservation.
             </p>
-            <GeoButton variant="light" onClick={() => openContactModal('Start Your Journey')} icon={ArrowRight}>
-              Start Your Journey
-            </GeoButton>
+            <BrandButton variant="light" onClick={() => openContactModal('Start Your Journey')} icon={ArrowRight}>
+              Initiate Discovery Call
+            </BrandButton>
           </FadeIn>
         </div>
       </section>
@@ -3944,7 +3977,7 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
 
 // --- ABOUT PAGE COMPONENT ---
 const AboutPage = ({ setCurrentPage, openContactModal }) => {
-  useSEO("About Us", "Learn about Ask Geo Financial Services, our mission, and our founder Geo Thomas.", "about");
+  useSEO("About Us", "Learn about Samruddhi Investments, our mission, and our advisory philosophy.", "about");
 
   return (
     <div className="pt-32 pb-10 animate-in fade-in duration-700 text-left bg-zinc-50">
@@ -3952,38 +3985,38 @@ const AboutPage = ({ setCurrentPage, openContactModal }) => {
         <FadeIn direction="down">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tighter text-zinc-950 mb-6 leading-[1.05]">
             Driven by data. <br />
-            <span className="font-medium text-emerald-600">Defined by trust.</span>
+            <span className="font-medium text-blue-600">Defined by trust.</span>
           </h1>
           <p className="text-base sm:text-lg lg:text-xl text-zinc-500 font-light max-w-3xl leading-relaxed mb-8">
-            Ask Geo was founded on a singular vision: to bring institutional-grade financial strategies to individual investors with absolute transparency.
+            Samruddhi Investments was founded on a singular vision: to bring institutional-grade financial strategies to individual investors with absolute transparency.
           </p>
         </FadeIn>
       </section>
 
-      <section className="bg-emerald-50/40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-20 lg:py-24 border-y border-emerald-100/50">
+      <section className="bg-blue-50/40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-20 lg:py-24 border-y border-blue-100/50">
         <div className="max-w-[1800px] mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <FadeIn direction="left">
-            <div className="aspect-square sm:aspect-[4/3] lg:aspect-square bg-white rounded-[2.5rem] p-8 sm:p-12 flex flex-col justify-end relative overflow-hidden group border border-zinc-100 shadow-2xl shadow-emerald-200/50 transition-shadow duration-700">
-              <div className="absolute inset-0 bg-gradient-to-tr from-emerald-50/50 to-transparent group-hover:scale-105 transition-transform duration-700"></div>
-              <Quote className="w-12 h-12 sm:w-16 sm:h-16 text-emerald-600/20 relative z-10 mb-8" strokeWidth={1}/>
+            <div className="aspect-square sm:aspect-[4/3] lg:aspect-square bg-white rounded-[2.5rem] p-8 sm:p-12 flex flex-col justify-end relative overflow-hidden group border border-zinc-100 shadow-2xl shadow-blue-200/50 transition-shadow duration-700">
+              <div className="absolute inset-0 bg-gradient-to-tr from-blue-50/50 to-transparent group-hover:scale-105 transition-transform duration-700"></div>
+              <Quote className="w-12 h-12 sm:w-16 sm:h-16 text-blue-600/20 relative z-10 mb-8" strokeWidth={1}/>
               <h3 className="text-2xl sm:text-3xl lg:text-4xl font-light relative z-10 text-zinc-900 leading-tight">"Wealth creation shouldn't be a black box. Our goal is absolute clarity."</h3>
             </div>
           </FadeIn>
           <FadeIn delay={200} direction="right">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-6 text-zinc-900">Our Genesis</h2>
             <p className="text-sm sm:text-base lg:text-lg text-zinc-600 font-light leading-relaxed mb-5">
-              For years, the financial advisory industry has thrived on complexity, jargon, and hidden fees. Ask Geo was created to dismantle that complexity. 
+              For years, the financial advisory industry has thrived on complexity, jargon, and hidden fees. Samruddhi Investments was created to dismantle that complexity. 
             </p>
             <p className="text-sm sm:text-base lg:text-lg text-zinc-600 font-light leading-relaxed mb-8">
               We realized that true financial freedom comes when clients deeply understand their portfolios. By combining advanced analytics with human empathy, we've built a platform where your goals are the only metrics that matter. We don't just manage money; we educate, empower, and elevate our investors.
             </p>
             <div className="flex gap-10 sm:gap-16 border-t border-zinc-200 pt-8">
                <div className="group cursor-default">
-                 <p className="text-3xl sm:text-4xl font-medium text-emerald-600 mb-2 transition-transform duration-300">2015</p>
+                 <p className="text-3xl sm:text-4xl font-medium text-blue-600 mb-2 transition-transform duration-300">2010</p>
                  <p className="text-[10px] sm:text-xs text-zinc-500 tracking-widest uppercase font-semibold">Established</p>
                </div>
                <div className="group cursor-default">
-                 <p className="text-3xl sm:text-4xl font-medium text-emerald-600 mb-2 transition-transform duration-300">Pune</p>
+                 <p className="text-3xl sm:text-4xl font-medium text-blue-600 mb-2 transition-transform duration-300">Pune</p>
                  <p className="text-[10px] sm:text-xs text-zinc-500 tracking-widest uppercase font-semibold">Headquarters</p>
                </div>
             </div>
@@ -3994,7 +4027,7 @@ const AboutPage = ({ setCurrentPage, openContactModal }) => {
       <section className="bg-zinc-50/50 py-24 px-6 sm:px-10 lg:px-16 xl:px-24">
         <div className="w-full max-w-[1800px] mx-auto">
           <FadeIn className="mb-12">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-4 text-zinc-900">The Ask Geo Pillars</h2>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-4 text-zinc-900">The Samruddhi Pillars</h2>
             <p className="text-base sm:text-lg text-zinc-500 font-light max-w-2xl">The non-negotiable principles that guide every portfolio decision we make.</p>
           </FadeIn>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
@@ -4004,8 +4037,8 @@ const AboutPage = ({ setCurrentPage, openContactModal }) => {
               { title: "Fiduciary Duty", desc: "Your interests always precede ours. We grow only when your portfolio grows." },
               { title: "Holistic Planning", desc: "We look beyond mere returns, focusing on taxation, risk, and succession." }
             ].map((item, idx) => (
-              <FadeIn key={idx} delay={idx * 150} direction="up" className="bg-white border border-zinc-200 p-8 sm:p-10 rounded-[2rem] hover:border-emerald-200 hover:shadow-xl hover:shadow-zinc-200 transition-all duration-500 group">
-                <div className="w-12 h-12 bg-zinc-100 text-emerald-600 rounded-xl flex items-center justify-center font-mono text-lg font-medium mb-6 group-hover:bg-emerald-100 transition-colors duration-500">
+              <FadeIn key={idx} delay={idx * 150} direction="up" className="bg-white border border-zinc-200 p-8 sm:p-10 rounded-[2rem] hover:border-blue-200 hover:shadow-xl hover:shadow-zinc-200 transition-all duration-500 group">
+                <div className="w-12 h-12 bg-zinc-100 text-blue-600 rounded-xl flex items-center justify-center font-mono text-lg font-medium mb-6 group-hover:bg-blue-100 transition-colors duration-500">
                   0{idx + 1}
                 </div>
                 <h4 className="text-xl sm:text-2xl font-medium mb-3 text-zinc-900">{item.title}</h4>
@@ -4016,31 +4049,31 @@ const AboutPage = ({ setCurrentPage, openContactModal }) => {
         </div>
       </section>
 
-      <section className="bg-green-50/30 px-6 sm:px-10 lg:px-16 xl:px-24 py-24 border-t border-green-100/50">
+      <section className="bg-blue-50/30 px-6 sm:px-10 lg:px-16 xl:px-24 py-24 border-t border-blue-100/50">
          <div className="w-full max-w-[1800px] mx-auto flex flex-col lg:flex-row gap-12 lg:gap-20 items-center">
             <FadeIn direction="left" className="lg:w-1/3 w-full">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-8 text-zinc-900">Leadership</h2>
-              <div className="aspect-[3/4] sm:aspect-[4/5] lg:aspect-[3/4] bg-white rounded-[2rem] p-2 relative overflow-hidden group shadow-2xl shadow-green-100 border border-green-100">
-                 <div className="w-full h-full rounded-[1.5rem] overflow-hidden relative">
-                   <img src="https://static.wixstatic.com/media/548938_b7923b7ddd8e422fb65978d9d97184a2~mv2.jpg" alt="Geo Thomas" className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-1000" />
-                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-900/10 to-transparent"></div>
-                   <div className="absolute bottom-8 left-8 right-8 z-10">
-                      <h3 className="text-2xl sm:text-3xl font-medium text-white mb-1">Geo Thomas</h3>
-                      <p className="text-emerald-400 text-[10px] sm:text-xs font-bold tracking-widest uppercase">Founder & Chief Advisor</p>
-                   </div>
+              <div className="aspect-[3/4] sm:aspect-[4/5] lg:aspect-[3/4] bg-white rounded-[2rem] p-2 relative overflow-hidden group shadow-2xl shadow-blue-100 border border-blue-100 flex items-center justify-center">
+                 <div className="w-full h-full rounded-[1.5rem] bg-gradient-to-br from-blue-900 to-indigo-950 flex flex-col items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wNykiLz48L3N2Zz4=')] opacity-50"></div>
+                    <Briefcase className="w-20 h-20 text-white/20 mb-6 group-hover:scale-110 transition-transform duration-700" strokeWidth={1} />
+                    <div className="text-center z-10 px-6">
+                      <h3 className="text-2xl sm:text-3xl font-medium text-white mb-2">Advisory Board</h3>
+                      <p className="text-blue-300 text-[10px] sm:text-xs font-bold tracking-widest uppercase">Samruddhi Investments</p>
+                    </div>
                  </div>
               </div>
             </FadeIn>
             <FadeIn delay={200} direction="right" className="lg:w-2/3 flex flex-col justify-center">
-              <Quote className="w-12 h-12 text-green-300 mb-8" strokeWidth={1} />
+              <Quote className="w-12 h-12 text-blue-300 mb-8" strokeWidth={1} />
               <p className="text-xl sm:text-2xl lg:text-3xl font-light leading-relaxed text-zinc-900 mb-8">
-                "I started Ask Geo because I saw a massive gap between what institutions were doing to grow wealth and what retail investors were being sold. I wanted to level the playing field."
+                "We started Samruddhi because we saw a massive gap between what institutions were doing to grow wealth and what retail investors were being sold. We wanted to level the playing field."
               </p>
               <p className="text-sm sm:text-base lg:text-lg font-light text-zinc-600 leading-relaxed mb-6">
-                Geo brings over 15 years of deep market experience, holding AMFI certifications and a profound understanding of macroeconomic cycles. His approach combines rigorous mathematical modeling with a deep understanding of human behavioral finance.
+                Our advisory team brings decades of deep market experience, holding AMFI certifications and a profound understanding of macroeconomic cycles. Our approach combines rigorous mathematical modeling with a deep understanding of human behavioral finance.
               </p>
               <p className="text-sm sm:text-base lg:text-lg font-light text-zinc-600 leading-relaxed">
-                Under his leadership, Ask Geo has grown to manage over 133K Crore in AUM, maintaining an impressive historic XIRR benchmark by staying disciplined, avoiding market noise, and focusing strictly on compounding.
+                Under this guidance, Samruddhi Investments has grown to manage significant AUM, maintaining an impressive historic XIRR benchmark by staying disciplined, avoiding market noise, and focusing strictly on compounding.
               </p>
             </FadeIn>
          </div>
@@ -4059,7 +4092,7 @@ const ServicesPage = ({ setCurrentPage, openContactModal }) => {
         <FadeIn direction="down">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tighter text-zinc-950 mb-6 leading-[1.05]">
             Comprehensive <br />
-            <span className="font-medium text-emerald-600">Financial Architecture.</span>
+            <span className="font-medium text-blue-600">Financial Architecture.</span>
           </h1>
           <p className="text-base sm:text-lg lg:text-xl text-zinc-500 font-light max-w-3xl leading-relaxed mb-8">
             We don't just pick funds. We build robust, tax-efficient, and inflation-beating systems tailored to your exact life stage.
@@ -4067,11 +4100,11 @@ const ServicesPage = ({ setCurrentPage, openContactModal }) => {
         </FadeIn>
       </section>
 
-      <section className="bg-emerald-50/40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-20 lg:py-28 border-y border-emerald-100/50">
+      <section className="bg-blue-50/40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-20 lg:py-28 border-y border-blue-100/50">
         <div className="max-w-[1800px] mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <FadeIn direction="right" className="order-2 lg:order-1">
-            <div className="w-16 h-16 bg-white border border-emerald-100 rounded-2xl flex items-center justify-center mb-8 shadow-sm">
-              <Briefcase className="w-8 h-8 text-emerald-600" strokeWidth={1.5} />
+            <div className="w-16 h-16 bg-white border border-blue-100 rounded-2xl flex items-center justify-center mb-8 shadow-sm">
+              <Briefcase className="w-8 h-8 text-blue-600" strokeWidth={1.5} />
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-6 text-zinc-900">Wealth Management</h2>
             <p className="text-sm sm:text-base lg:text-lg text-zinc-600 font-light leading-relaxed mb-8">
@@ -4079,35 +4112,35 @@ const ServicesPage = ({ setCurrentPage, openContactModal }) => {
             </p>
             <ul className="space-y-4 mb-10">
               {['Goal-based SIP structuring', 'Lumpsum deployment strategies', 'Asset allocation modeling', 'Retirement corpus planning'].map((item, i) => (
-                <li key={i} className="flex items-center gap-4 text-zinc-800 font-medium text-sm sm:text-base"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> {item}</li>
+                <li key={i} className="flex items-center gap-4 text-zinc-800 font-medium text-sm sm:text-base"><Check className="w-5 h-5 text-blue-500 shrink-0" /> {item}</li>
               ))}
             </ul>
-            <GeoButton onClick={() => openContactModal('Wealth Management')} icon={ArrowRight}>
+            <BrandButton onClick={() => openContactModal('Wealth Management')} icon={ArrowRight}>
               Request Detailed Strategy
-            </GeoButton>
+            </BrandButton>
           </FadeIn>
           <FadeIn delay={200} direction="left" className="order-1 lg:order-2">
-            <div className="aspect-[4/3] bg-white rounded-[2.5rem] border border-emerald-100 relative overflow-hidden shadow-2xl shadow-emerald-100/50 group">
-               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-100/50 to-transparent group-hover:scale-105 transition-transform duration-1000"></div>
-               <PieChart className="absolute -bottom-10 -right-10 w-72 h-72 text-emerald-50/80 transition-transform duration-1000" strokeWidth={0.5} />
-               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-emerald-100/50 rounded-full blur-2xl animate-pulse"></div>
+            <div className="aspect-[4/3] bg-white rounded-[2.5rem] border border-blue-100 relative overflow-hidden shadow-2xl shadow-blue-100/50 group">
+               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-100/50 to-transparent group-hover:scale-105 transition-transform duration-1000"></div>
+               <PieChart className="absolute -bottom-10 -right-10 w-72 h-72 text-blue-50/80 transition-transform duration-1000" strokeWidth={0.5} />
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-blue-100/50 rounded-full blur-2xl animate-pulse"></div>
             </div>
           </FadeIn>
         </div>
       </section>
 
-      <section className="bg-green-50/40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-20 lg:py-28">
+      <section className="bg-indigo-50/40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-20 lg:py-28">
         <div className="max-w-[1800px] mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <FadeIn direction="right">
-            <div className="aspect-[4/3] bg-white rounded-[2.5rem] border border-green-100 relative overflow-hidden shadow-2xl shadow-green-100/50 group">
-               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-green-100/50 to-transparent group-hover:scale-105 transition-transform duration-1000"></div>
-               <TrendingUp className="absolute -top-10 -left-10 w-72 h-72 text-green-50/80 transition-transform duration-1000" strokeWidth={0.5} />
-               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-green-100/50 rounded-full blur-2xl animate-pulse"></div>
+            <div className="aspect-[4/3] bg-white rounded-[2.5rem] border border-indigo-100 relative overflow-hidden shadow-2xl shadow-indigo-100/50 group">
+               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-indigo-100/50 to-transparent group-hover:scale-105 transition-transform duration-1000"></div>
+               <TrendingUp className="absolute -top-10 -left-10 w-72 h-72 text-indigo-50/80 transition-transform duration-1000" strokeWidth={0.5} />
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-indigo-100/50 rounded-full blur-2xl animate-pulse"></div>
             </div>
           </FadeIn>
           <FadeIn delay={200} direction="left">
-            <div className="w-16 h-16 bg-white border border-green-100 rounded-2xl flex items-center justify-center mb-8 shadow-sm">
-              <Activity className="w-8 h-8 text-green-600" strokeWidth={1.5} />
+            <div className="w-16 h-16 bg-white border border-indigo-100 rounded-2xl flex items-center justify-center mb-8 shadow-sm">
+              <Activity className="w-8 h-8 text-indigo-600" strokeWidth={1.5} />
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-6 text-zinc-900">Portfolio Management</h2>
             <p className="text-sm sm:text-base lg:text-lg text-zinc-600 font-light leading-relaxed mb-8">
@@ -4115,12 +4148,12 @@ const ServicesPage = ({ setCurrentPage, openContactModal }) => {
             </p>
             <ul className="space-y-4 mb-10">
               {['Active ETF & Direct Equity advisory', 'Dynamic debt fund rotation', 'Quarterly rebalancing', 'Tax-loss harvesting'].map((item, i) => (
-                <li key={i} className="flex items-center gap-4 text-zinc-800 font-medium text-sm sm:text-base"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> {item}</li>
+                <li key={i} className="flex items-center gap-4 text-zinc-800 font-medium text-sm sm:text-base"><Check className="w-5 h-5 text-blue-500 shrink-0" /> {item}</li>
               ))}
             </ul>
-            <GeoButton onClick={() => openContactModal('Portfolio Management')} icon={ArrowRight}>
+            <BrandButton onClick={() => openContactModal('Portfolio Management')} icon={ArrowRight}>
               Explore PMS Capabilities
-            </GeoButton>
+            </BrandButton>
           </FadeIn>
         </div>
       </section>
@@ -4140,7 +4173,7 @@ const ServicesPage = ({ setCurrentPage, openContactModal }) => {
                { step: "04", title: "Execution", desc: "Seamless deployment and the start of 24/7 active monitoring." }
              ].map((item, i) => (
                <FadeIn key={i} delay={i * 200} direction="zoom" className="relative z-10 bg-white p-8 rounded-[2rem] border border-zinc-200 shadow-xl shadow-zinc-200/30 transition-transform duration-500">
-                 <div className="w-14 h-14 bg-emerald-600 shadow-lg shadow-emerald-600/30 text-white rounded-2xl flex items-center justify-center text-lg font-bold mb-6">{item.step}</div>
+                 <div className="w-14 h-14 bg-blue-600 shadow-lg shadow-blue-600/30 text-white rounded-2xl flex items-center justify-center text-lg font-bold mb-6">{item.step}</div>
                  <h4 className="text-xl font-medium mb-3 text-zinc-900">{item.title}</h4>
                  <p className="text-zinc-500 font-light text-base leading-relaxed">{item.desc}</p>
                </FadeIn>
@@ -4159,13 +4192,13 @@ const BlogPostPage = ({ post, onBack }) => {
   return (
     <article className="pt-32 pb-24 animate-in slide-in-from-right duration-500 text-left bg-white min-h-screen">
       <div className="max-w-[800px] mx-auto px-6 sm:px-10 lg:px-16">
-        <button onClick={onBack} className="flex items-center gap-2 text-zinc-500 hover:text-emerald-600 font-medium text-sm mb-10 transition-colors">
+        <button onClick={onBack} className="flex items-center gap-2 text-zinc-500 hover:text-blue-600 font-medium text-sm mb-10 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Insights
         </button>
 
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-6">
-            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full">{post.category}</span>
+            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">{post.category}</span>
             <span className="text-sm text-zinc-500 font-medium">{post.date || new Date(post.publishedAt).toLocaleDateString()}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-light text-zinc-900 tracking-tight leading-tight mb-8">
@@ -4174,7 +4207,6 @@ const BlogPostPage = ({ post, onBack }) => {
         </div>
 
         <div className="prose prose-zinc prose-lg max-w-none font-light leading-relaxed text-zinc-700">
-          {/* Simple paragraph renderer assuming generic text content for now */}
           {post.content.split('\n').map((paragraph, idx) => (
              paragraph.trim() ? <p key={idx} className="mb-6">{paragraph}</p> : null
           ))}
@@ -4239,7 +4271,7 @@ const InsightsPage = () => {
       <section className="px-6 sm:px-10 lg:px-16 xl:px-24 w-full max-w-[1800px] mx-auto py-16">
         <FadeIn direction="down">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tighter text-zinc-950 mb-6">
-            Market <span className="font-medium text-emerald-600">Insights</span>
+            Market <span className="font-medium text-blue-600">Insights</span>
           </h1>
           <p className="text-lg text-zinc-500 font-light max-w-3xl mb-12 leading-relaxed">
             Stay ahead of the curve with market explainers, financial planning notes, and strategic investment perspectives.
@@ -4251,14 +4283,14 @@ const InsightsPage = () => {
             <FadeIn key={idx} delay={idx * 100} direction="up">
               <div 
                 onClick={() => setSelectedPost(article)}
-                className="bg-white p-8 rounded-[2rem] border border-zinc-200 shadow-lg shadow-zinc-200/30 hover:border-emerald-300 transition-colors duration-300 group cursor-pointer flex flex-col h-full"
+                className="bg-white p-8 rounded-[2rem] border border-zinc-200 shadow-lg shadow-zinc-200/30 hover:border-blue-300 transition-colors duration-300 group cursor-pointer flex flex-col h-full"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full">{article.category}</span>
+                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">{article.category}</span>
                   <span className="text-xs text-zinc-400 font-medium">{article.date}</span>
                 </div>
-                <h3 className="text-xl font-medium text-zinc-900 mb-4 leading-snug group-hover:text-emerald-700 transition-colors">{article.title}</h3>
-                <div className="mt-auto pt-6 flex items-center text-sm font-medium text-zinc-500 group-hover:text-emerald-600 transition-colors">
+                <h3 className="text-xl font-medium text-zinc-900 mb-4 leading-snug group-hover:text-blue-700 transition-colors">{article.title}</h3>
+                <div className="mt-auto pt-6 flex items-center text-sm font-medium text-zinc-500 group-hover:text-blue-600 transition-colors">
                   Read Analysis <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </div>
               </div>
@@ -4272,7 +4304,7 @@ const InsightsPage = () => {
 
 // --- CONTACT PAGE COMPONENT ---
 const ContactPage = () => {
-  useSEO("Contact Ask Geo", "Get in touch with Ask Geo Financial Services for expert wealth management.", "contact");
+  useSEO("Contact Samruddhi", "Get in touch with Samruddhi Investments for expert wealth management.", "contact");
 
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', subject: 'General Enquiry', message: '' });
   const [isProcessing, setIsProcessing] = useState(false);
@@ -4284,7 +4316,7 @@ const ContactPage = () => {
 
     try {
       const emailHtml = getBeautifulEmailTemplate(`Contact Form: ${formData.subject}`, formData);
-      await sendEmailViaBackend(`Ask Geo Contact: ${formData.subject} - ${formData.name}`, emailHtml);
+      await sendEmailViaBackend(`Samruddhi Contact: ${formData.subject} - ${formData.name}`, emailHtml);
       setIsSuccess(true);
       setFormData({ name: '', phone: '', email: '', subject: 'General Enquiry', message: '' });
       setTimeout(() => setIsSuccess(false), 5000);
@@ -4302,7 +4334,7 @@ const ContactPage = () => {
         <div className="grid lg:grid-cols-2 gap-16 lg:gap-24">
           <FadeIn direction="right">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tighter text-zinc-950 mb-6 leading-tight">
-              Let's secure your <br/><span className="font-medium text-emerald-600">financial future.</span>
+              Let's secure your <br/><span className="font-medium text-blue-600">financial future.</span>
             </h1>
             <p className="text-lg text-zinc-500 font-light mb-12 leading-relaxed max-w-lg">
               Whether you are looking to restructure your existing portfolio, start fresh, or need guidance on specific financial goals, we are here to help.
@@ -4311,29 +4343,29 @@ const ContactPage = () => {
             <div className="space-y-8">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-zinc-200 shadow-sm shrink-0">
-                  <Mail className="w-5 h-5 text-emerald-600" />
+                  <Mail className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Email Us</p>
-                  <p className="text-zinc-900 font-medium">geoconsultant@gmail.com</p>
+                  <p className="text-zinc-900 font-medium">info@samrudhiinvestments.com</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-zinc-200 shadow-sm shrink-0">
-                  <Phone className="w-5 h-5 text-emerald-600" />
+                  <Phone className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Call Us</p>
-                  <p className="text-zinc-900 font-medium">+91 99606 24271</p>
+                  <p className="text-zinc-900 font-medium">+91 98765 43210</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-zinc-200 shadow-sm shrink-0">
-                  <MapPin className="w-5 h-5 text-emerald-600" />
+                  <MapPin className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Visit Us</p>
-                  <p className="text-zinc-900 font-medium max-w-xs leading-relaxed">Jai Ganesh Vision, B Wing, BR-2, Office No. 319, Akurdi, Pune - 411035</p>
+                  <p className="text-zinc-900 font-medium max-w-xs leading-relaxed">Financial Hub, Main Street, Pune, Maharashtra - 411001</p>
                 </div>
               </div>
             </div>
@@ -4343,8 +4375,8 @@ const ContactPage = () => {
             <div className="bg-white p-8 sm:p-12 rounded-[2.5rem] border border-zinc-200 shadow-2xl shadow-zinc-200/50">
               <h3 className="text-2xl font-medium text-zinc-900 mb-8">Send a Message</h3>
               {isSuccess ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center animate-in zoom-in duration-300 bg-emerald-50 rounded-2xl border border-emerald-100">
-                   <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-emerald-100/50">
+                <div className="flex flex-col items-center justify-center py-12 text-center animate-in zoom-in duration-300 bg-blue-50 rounded-2xl border border-blue-100">
+                   <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-blue-100/50">
                      <Check className="w-8 h-8" strokeWidth={2} />
                    </div>
                    <h4 className="text-xl font-medium text-zinc-900 mb-2">Message Sent</h4>
@@ -4355,20 +4387,20 @@ const ContactPage = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Full Name</label>
-                      <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="John Doe" />
+                      <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="John Doe" />
                     </div>
                     <div>
                       <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Phone</label>
-                      <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value.replace(/\D/g, '')})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile" />
+                      <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value.replace(/\D/g, '')})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile" />
                     </div>
                   </div>
                   <div>
                     <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Email Address</label>
-                    <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="john@example.com" />
+                    <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="john@example.com" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Subject</label>
-                    <select value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white">
+                    <select value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white">
                       <option value="General Enquiry">General Enquiry</option>
                       <option value="Wealth Management">Wealth Management</option>
                       <option value="Portfolio Management">Portfolio Management</option>
@@ -4377,11 +4409,11 @@ const ContactPage = () => {
                   </div>
                   <div>
                     <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Message</label>
-                    <textarea required rows="4" value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white resize-none" placeholder="How can we help you?"></textarea>
+                    <textarea required rows="4" value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white resize-none" placeholder="How can we help you?"></textarea>
                   </div>
-                  <GeoButton type="submit" disabled={isProcessing} className="mt-6" wFull icon={isProcessing ? Activity : Send}>
+                  <BrandButton type="submit" disabled={isProcessing} className="mt-6" wFull icon={isProcessing ? Activity : Send}>
                     {isProcessing ? 'Sending...' : 'Send Message'}
-                  </GeoButton>
+                  </BrandButton>
                 </form>
               )}
             </div>
@@ -4392,105 +4424,14 @@ const ContactPage = () => {
   );
 };
 
-// --- CALCULATORS PAGE COMPONENT ---
-const CalculatorsPage = ({ setCurrentPage, openContactModal }) => {
-  useSEO("Financial Tools & Calculators", "Use our advanced SIP, Lumpsum, and Retirement calculators to plan your financial future.", "tools");
-  
-  const [activeTab, setActiveTab] = useState('audit');
-
-  const tabs = [
-    { id: 'audit', name: 'Goal Audit', icon: ShieldCheck },
-    { id: 'sip', name: 'SIP Pro', icon: TrendingUp },
-    { id: 'stepup', name: 'Step-Up SIP', icon: Zap },
-    { id: 'stp', name: 'STP to SIP', icon: RefreshCw },
-    { id: 'lumpsum', name: 'Lumpsum', icon: Briefcase },
-    { id: 'emivssip', name: 'EMI vs SIP', icon: PieChart },
-    { id: 'emimatch', name: 'EMI Match SIP', icon: Activity },
-    { id: 'prepayment', name: 'EMI Prepayment', icon: ChevronsDown },
-    { id: 'smartemi', name: 'Zero-Cost EMI', icon: Sparkles },
-    { id: 'earlyclosure', name: 'Early Debt Freedom', icon: ShieldCheck },
-    { id: 'fire', name: 'F.I.R.E Target', icon: Map },
-    { id: 'goal', name: 'Goal Planner', icon: Target },
-  ];
-
-  return (
-    <div className="pt-32 pb-0 animate-in fade-in duration-700 text-left bg-zinc-50">
-      <section className="px-6 sm:px-10 lg:px-16 xl:px-24 w-full max-w-[1800px] mx-auto py-16 lg:py-20">
-        <FadeIn direction="down" className="max-w-4xl">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tighter text-zinc-950 mb-6 leading-[1.05]">
-            The Math of <br />
-            <span className="font-medium text-emerald-600">Wealth Creation.</span>
-          </h1>
-          <p className="text-base sm:text-lg lg:text-xl text-zinc-500 font-light leading-relaxed mb-8">
-            A suite of advanced, precision tools designed to help you visualize compounding, plan for retirement, and map out your definitive path to financial freedom.
-          </p>
-        </FadeIn>
-      </section>
-
-      <section className="bg-white px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-12 lg:py-16 border-y border-zinc-200/50">
-        <div className="max-w-[1800px] mx-auto">
-          <div className="bg-white border border-zinc-200/60 rounded-[2.5rem] p-6 sm:p-10 lg:p-12 overflow-hidden shadow-2xl shadow-zinc-200/50">
-            <FadeIn delay={100} direction="up" className="mb-12">
-              <div className="flex overflow-x-auto hide-scrollbar gap-3 pb-4 snap-x border-b border-zinc-100">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`snap-start whitespace-nowrap flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 border ${
-                      activeTab === tab.id 
-                        ? 'bg-[#18181b] text-white border-[#18181b] shadow-lg' 
-                        : 'bg-zinc-50 text-zinc-500 border-zinc-200 hover:border-zinc-300 hover:text-zinc-900 hover:bg-white'
-                    }`}
-                  >
-                    <tab.icon className={`w-4 h-4 shrink-0 ${activeTab === tab.id ? 'animate-pulse' : ''}`} strokeWidth={activeTab === tab.id ? 2 : 1.5} />
-                    {tab.name}
-                  </button>
-                ))}
-              </div>
-            </FadeIn>
-
-            <div className="min-h-[550px]">
-              {activeTab === 'audit' && <FinancialAuditTool embedded setCurrentPage={setCurrentPage} openContactModal={openContactModal} />}
-              {activeTab === 'sip' && <SipCalculatorWidget />}
-              {activeTab === 'stepup' && <StepUpCalculatorWidget />}
-              {activeTab === 'stp' && <StpToSipCalculatorWidget />}
-              {activeTab === 'lumpsum' && <LumpsumCalculatorWidget />}
-              {activeTab === 'emivssip' && <EmiVsSipCalculatorWidget />}
-              {activeTab === 'emimatch' && <EmiMatchSipWidget />}
-              {activeTab === 'prepayment' && <ExtraEmiCalculatorWidget />}
-              {activeTab === 'smartemi' && <SmartEmiCalculatorWidget />}
-              {activeTab === 'earlyclosure' && <EarlyClosureWidget />}
-              {activeTab === 'fire' && <FireCalculatorWidget />}
-              {activeTab === 'goal' && <GoalCalculatorWidget />}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-emerald-50/40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-20 lg:py-28 flex flex-col items-start text-left">
-        <FadeIn direction="up" className="flex flex-col items-start max-w-2xl">
-          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-emerald-100">
-            <Calculator className="w-8 h-8 text-emerald-600" />
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-6 text-zinc-900">Numbers look good?</h2>
-          <p className="text-zinc-600 font-light mb-10 text-base sm:text-lg leading-relaxed">Calculators show possibilities. Our experts turn them into realities. Let Ask Geo build the portfolio that executes your math.</p>
-          <GeoButton onClick={() => openContactModal('Execute My Plan')} icon={ArrowRight}>
-            Schedule a Strategy Session
-          </GeoButton>
-        </FadeIn>
-      </section>
-    </div>
-  );
-};
-
 // --- LEGAL PAGE COMPONENT ---
 const LegalPage = ({ title }) => {
-  useSEO(title, `Ask Geo Financial Services - ${title}`, `legal`);
+  useSEO(title, `Samruddhi Investments - ${title}`, `legal`);
 
-  const today = "April 6, 2026";
-  const address = "Jai Ganesh Vision, B Wing, BR-2, Office No. 319, Akurdi, Pune - 411035";
-  const email = "geoconsultant@gmail.com";
-  const phone = "+91 99606 24271";
+  const today = "July 9, 2026";
+  const address = "Financial Hub, Main Street, Pune, Maharashtra - 411001";
+  const email = "info@samrudhiinvestments.com";
+  const phone = "+91 98765 43210";
 
   const renderContent = () => {
     switch (title) {
@@ -4498,11 +4439,11 @@ const LegalPage = ({ title }) => {
         return (
           <div className="space-y-4">
             <p className="font-medium">Effective Date: {today}<br/>Last Updated: {today}</p>
-            <p>Welcome to Ask Geo (“Ask Geo,” “we,” “us,” or “our”). These Terms of Service govern your access to and use of our website, tools, calculators, reports, content, and related services.</p>
+            <p>Welcome to Samruddhi Investments (“Samruddhi,” “we,” “us,” or “our”). These Terms of Service govern your access to and use of our website, tools, calculators, reports, content, and related services.</p>
             <p>By accessing or using this website, you agree to be bound by these Terms. If you do not agree, please do not use this website.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">1. Scope of Services</h3>
-            <p>Ask Geo provides financial information tools, planning calculators, educational content, consultation request forms, and related digital resources. The website may allow users to generate reports, projections, and illustrative outputs based on information entered by them.</p>
+            <p>Samruddhi provides financial information tools, planning calculators, educational content, consultation request forms, and related digital resources. The website may allow users to generate reports, projections, and illustrative outputs based on information entered by them.</p>
             <p>Unless expressly stated otherwise in writing, the website content and tools are intended for general informational and educational purposes only and do not, by themselves, constitute investment advice, investment recommendation, assurance of returns, solicitation, or an offer to buy or sell any security, financial product, or service.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">2. Eligibility</h3>
@@ -4539,7 +4480,7 @@ const LegalPage = ({ title }) => {
             </ul>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">7. Intellectual Property</h3>
-            <p>All website content, including text, design, logos, graphics, layouts, code, calculators, reports, downloadable materials, and branding, is owned by or licensed to Ask Geo and is protected by applicable intellectual property laws.</p>
+            <p>All website content, including text, design, logos, graphics, layouts, code, calculators, reports, downloadable materials, and branding, is owned by or licensed to Samruddhi Investments and is protected by applicable intellectual property laws.</p>
             <p>You may view and use the website for personal, non-commercial use only. No right, title, or interest in any intellectual property is transferred to you.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">8. Third-Party Services</h3>
@@ -4547,14 +4488,14 @@ const LegalPage = ({ title }) => {
             <p>We are not responsible for third-party websites, services, content, or policies.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">9. Communications</h3>
-            <p>By submitting your contact details, you consent to being contacted by Ask Geo through phone, SMS, WhatsApp, email, or other reasonable communication channels in connection with your enquiry, requested report, consultation, or related service updates, subject to applicable law.</p>
+            <p>By submitting your contact details, you consent to being contacted by Samruddhi through phone, SMS, WhatsApp, email, or other reasonable communication channels in connection with your enquiry, requested report, consultation, or related service updates, subject to applicable law.</p>
             <p>You may opt out of non-essential communications by contacting us.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">10. No Warranty</h3>
-            <p>The website and all content, tools, and services are provided on an “as is” and “as available” basis. To the maximum extent permitted by law, Ask Geo disclaims all warranties, express or implied, including warranties of accuracy, completeness, merchantability, fitness for a particular purpose, availability, non-infringement, and uninterrupted access.</p>
+            <p>The website and all content, tools, and services are provided on an “as is” and “as available” basis. To the maximum extent permitted by law, Samruddhi disclaims all warranties, express or implied, including warranties of accuracy, completeness, merchantability, fitness for a particular purpose, availability, non-infringement, and uninterrupted access.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">11. Limitation of Liability</h3>
-            <p>To the fullest extent permitted by law, Ask Geo shall not be liable for any direct, indirect, incidental, consequential, special, punitive, or exemplary damages arising out of or related to:</p>
+            <p>To the fullest extent permitted by law, Samruddhi shall not be liable for any direct, indirect, incidental, consequential, special, punitive, or exemplary damages arising out of or related to:</p>
             <ul className="list-disc pl-5 space-y-2">
               <li>your use of or inability to use the website,</li>
               <li>reliance on any content, report, projection, or calculator output,</li>
@@ -4564,7 +4505,7 @@ const LegalPage = ({ title }) => {
             </ul>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">12. Indemnity</h3>
-            <p>You agree to indemnify and hold harmless Ask Geo, its owners, affiliates, employees, representatives, and service providers from and against any claims, liabilities, damages, losses, costs, or expenses arising from your misuse of the website, your breach of these Terms, or your violation of applicable law or third-party rights.</p>
+            <p>You agree to indemnify and hold harmless Samruddhi, its owners, affiliates, employees, representatives, and service providers from and against any claims, liabilities, damages, losses, costs, or expenses arising from your misuse of the website, your breach of these Terms, or your violation of applicable law or third-party rights.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">13. Suspension or Termination</h3>
             <p>We reserve the right to suspend, restrict, or terminate access to the website or any part of it at any time, without prior notice, if we believe you have violated these Terms or if such action is required for legal, operational, or security reasons.</p>
@@ -4577,14 +4518,14 @@ const LegalPage = ({ title }) => {
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">16. Contact</h3>
             <p>For questions regarding these Terms, please contact:</p>
-            <p>Ask Geo<br/>Email: {email}<br/>Phone: {phone}<br/>Address: {address}</p>
+            <p>Samruddhi Investments<br/>Email: {email}<br/>Phone: {phone}<br/>Address: {address}</p>
           </div>
         );
       case 'Privacy Policy':
         return (
           <div className="space-y-4">
             <p className="font-medium">Effective Date: {today}<br/>Last Updated: {today}</p>
-            <p>Ask Geo values your privacy and is committed to handling your personal data responsibly and lawfully.</p>
+            <p>Samruddhi Investments values your privacy and is committed to handling your personal data responsibly and lawfully.</p>
             <p>This Privacy Policy explains how we collect, use, store, disclose, and protect your personal data when you use our website, fill in forms, request consultations, use calculators, or download reports.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">1. Information We Collect</h3>
@@ -4682,7 +4623,7 @@ const LegalPage = ({ title }) => {
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">14. Contact for Privacy Matters</h3>
             <p>If you have questions, requests, or complaints relating to privacy or data protection, contact:</p>
-            <p>Ask Geo<br/>Email: {email}<br/>Phone: {phone}<br/>Address: {address}</p>
+            <p>Samruddhi Investments<br/>Email: {email}<br/>Phone: {phone}<br/>Address: {address}</p>
           </div>
         );
       case 'Disclosure':
@@ -4700,7 +4641,7 @@ const LegalPage = ({ title }) => {
             <p>Market-linked products are subject to market risks. Past performance does not guarantee future results.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">3. No Guarantee</h3>
-            <p>Ask Geo does not guarantee the accuracy, completeness, timeliness, suitability, or reliability of any information, calculation, estimate, projection, or report generated through the website.</p>
+            <p>Samruddhi does not guarantee the accuracy, completeness, timeliness, suitability, or reliability of any information, calculation, estimate, projection, or report generated through the website.</p>
             <p>No guarantee or warranty is made regarding returns, performance, capital preservation, suitability, or outcome.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">4. User Responsibility</h3>
@@ -4710,21 +4651,21 @@ const LegalPage = ({ title }) => {
             <p>Use of this website, filling a form, receiving a generated report, or communicating with us does not by itself create a client, adviser, fiduciary, analyst, or professional services relationship unless expressly agreed in writing.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">6. Third-Party Content and Tools</h3>
-            <p>Where the website relies on or links to third-party data, services, integrations, or tools, Ask Geo does not take responsibility for their availability, accuracy, or content.</p>
+            <p>Where the website relies on or links to third-party data, services, integrations, or tools, Samruddhi does not take responsibility for their availability, accuracy, or content.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">7. Limitation of Reliance</h3>
             <p>The website content should not be treated as a substitute for due diligence, regulated advice, product disclosure documents, or professional review.</p>
 
             <h3 className="text-xl font-medium mt-8 text-zinc-900">8. Contact</h3>
             <p>For clarifications regarding this disclaimer, contact:</p>
-            <p>Ask Geo<br/>Email: {email}<br/>Phone: {phone}</p>
+            <p>Samruddhi Investments<br/>Email: {email}<br/>Phone: {phone}</p>
           </div>
         );
       case 'Regulatory Information':
         return (
           <div className="space-y-4">
-            <p>Ask Geo provides financial education tools, planning calculators, informational content, and consultation-request facilities through this website.</p>
-            <p>Ask Geo does not claim, through this website, to provide regulated investment advisory services, regulated research analyst services, portfolio management services, stock broking services, or any other activity requiring registration, licence, or authorization, unless specifically disclosed in writing with valid registration details.</p>
+            <p>Samruddhi Investments provides financial education tools, planning calculators, informational content, and consultation-request facilities through this website.</p>
+            <p>Samruddhi does not claim, through this website, to provide regulated investment advisory services, regulated research analyst services, portfolio management services, stock broking services, or any other activity requiring registration, licence, or authorization, unless specifically disclosed in writing with valid registration details.</p>
             <p>The website’s calculators, reports, and educational materials are intended solely for informational and illustrative purposes. They should not be construed as:</p>
             <ul className="list-disc pl-5 space-y-2">
               <li>personalized investment advice,</li>
@@ -4734,7 +4675,7 @@ const LegalPage = ({ title }) => {
               <li>solicitation to invest,</li>
               <li>execution platform or intermediary service.</li>
             </ul>
-            <p>If Ask Geo offers any regulated service in future, the relevant registration number, entity details, scope of service, and mandatory disclosures shall be published separately in accordance with applicable law.</p>
+            <p>If Samruddhi offers any regulated service in future, the relevant registration number, entity details, scope of service, and mandatory disclosures shall be published separately in accordance with applicable law.</p>
             <p>Users are advised to verify the credentials and registration status of any adviser, analyst, intermediary, or service provider before acting on any financial decision. SEBI regulates, among others, Investment Advisers and Research Analysts in India.</p>
             
             <h3 className="text-xl font-medium mt-8 text-zinc-900">Contact</h3>
@@ -4759,8 +4700,99 @@ const LegalPage = ({ title }) => {
   );
 };
 
+// --- CALCULATORS PAGE COMPONENT ---
+const CalculatorsPage = ({ setCurrentPage, openContactModal }) => {
+  useSEO("Financial Tools & Calculators", "Use our advanced SIP, Lumpsum, and Retirement calculators to plan your financial future.", "tools");
+  
+  const [activeTab, setActiveTab] = useState('audit');
+
+  const tabs = [
+    { id: 'audit', name: 'Goal Audit', icon: ShieldCheck },
+    { id: 'sip', name: 'SIP Pro', icon: TrendingUp },
+    { id: 'stepup', name: 'Step-Up SIP', icon: Zap },
+    { id: 'stp', name: 'STP to SIP', icon: RefreshCw },
+    { id: 'lumpsum', name: 'Lumpsum', icon: Briefcase },
+    { id: 'emivssip', name: 'EMI vs SIP', icon: PieChart },
+    { id: 'emimatch', name: 'EMI Match SIP', icon: Activity },
+    { id: 'prepayment', name: 'EMI Prepayment', icon: ChevronsDown },
+    { id: 'smartemi', name: 'Zero-Cost EMI', icon: Sparkles },
+    { id: 'earlyclosure', name: 'Early Debt Freedom', icon: ShieldCheck },
+    { id: 'fire', name: 'F.I.R.E Target', icon: Map },
+    { id: 'goal', name: 'Goal Planner', icon: Target },
+  ];
+
+  return (
+    <div className="pt-32 pb-0 animate-in fade-in duration-700 text-left bg-zinc-50">
+      <section className="px-6 sm:px-10 lg:px-16 xl:px-24 w-full max-w-[1800px] mx-auto py-16 lg:py-20">
+        <FadeIn direction="down" className="max-w-4xl">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tighter text-zinc-950 mb-6 leading-[1.05]">
+            The Math of <br />
+            <span className="font-medium text-blue-600">Wealth Creation.</span>
+          </h1>
+          <p className="text-base sm:text-lg lg:text-xl text-zinc-500 font-light leading-relaxed mb-8">
+            A suite of advanced, precision tools designed to help you visualize compounding, plan for retirement, and map out your definitive path to financial freedom.
+          </p>
+        </FadeIn>
+      </section>
+
+      <section className="bg-white px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-12 lg:py-16 border-y border-zinc-200/50">
+        <div className="max-w-[1800px] mx-auto">
+          <div className="bg-white border border-zinc-200/60 rounded-[2.5rem] p-6 sm:p-10 lg:p-12 overflow-hidden shadow-2xl shadow-zinc-200/50">
+            <FadeIn delay={100} direction="up" className="mb-12">
+              <div className="flex overflow-x-auto hide-scrollbar gap-3 pb-4 snap-x border-b border-zinc-100">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`snap-start whitespace-nowrap flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 border ${
+                      activeTab === tab.id 
+                        ? 'bg-[#18181b] text-white border-[#18181b] shadow-lg' 
+                        : 'bg-zinc-50 text-zinc-500 border-zinc-200 hover:border-zinc-300 hover:text-zinc-900 hover:bg-white'
+                    }`}
+                  >
+                    <tab.icon className={`w-4 h-4 shrink-0 ${activeTab === tab.id ? 'animate-pulse' : ''}`} strokeWidth={activeTab === tab.id ? 2 : 1.5} />
+                    {tab.name}
+                  </button>
+                ))}
+              </div>
+            </FadeIn>
+
+            <div className="min-h-[550px]">
+              {activeTab === 'audit' && <FinancialAuditTool embedded setCurrentPage={setCurrentPage} openContactModal={openContactModal} />}
+              {activeTab === 'sip' && <SipCalculatorWidget />}
+              {activeTab === 'stepup' && <StepUpCalculatorWidget />}
+              {activeTab === 'stp' && <StpToSipCalculatorWidget />}
+              {activeTab === 'lumpsum' && <LumpsumCalculatorWidget />}
+              {activeTab === 'emivssip' && <EmiVsSipCalculatorWidget />}
+              {activeTab === 'emimatch' && <EmiMatchSipWidget />}
+              {activeTab === 'prepayment' && <ExtraEmiCalculatorWidget />}
+              {activeTab === 'smartemi' && <SmartEmiCalculatorWidget />}
+              {activeTab === 'earlyclosure' && <EarlyClosureWidget />}
+              {activeTab === 'fire' && <FireCalculatorWidget />}
+              {activeTab === 'goal' && <GoalCalculatorWidget />}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-blue-50/40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-20 lg:py-28 flex flex-col items-start text-left">
+        <FadeIn direction="up" className="flex flex-col items-start max-w-2xl">
+          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-blue-100">
+            <Calculator className="w-8 h-8 text-blue-600" />
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-6 text-zinc-900">Numbers look good?</h2>
+          <p className="text-zinc-600 font-light mb-10 text-base sm:text-lg leading-relaxed">Calculators show possibilities. Our experts turn them into realities. Let Samruddhi build the portfolio that executes your math.</p>
+          <BrandButton onClick={() => openContactModal('Execute My Plan')} icon={ArrowRight}>
+            Schedule a Strategy Session
+          </BrandButton>
+        </FadeIn>
+      </section>
+    </div>
+  );
+};
+
 // --- Main Application ---
-const AskGeoApp = () => {
+const App = () => {
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -4780,7 +4812,7 @@ const AskGeoApp = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans selection:bg-emerald-200 selection:text-zinc-900 overflow-x-hidden text-left">
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans selection:bg-blue-200 selection:text-zinc-900 overflow-x-hidden text-left">
       
       <style>{`
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
@@ -4801,7 +4833,7 @@ const AskGeoApp = () => {
       }`}>
         <div className="w-full max-w-[1800px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-24 flex justify-between items-center">
           <div className="flex items-center gap-3 group cursor-pointer" onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); }}>
-            <img src="https://static.wixstatic.com/media/548938_d02490efa777416caf274ba6f2482d6e~mv2.png" alt="Ask Geo" className="h-10 sm:h-12 w-auto object-contain transition-transform duration-500 group-hover:scale-105" />
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-blue-700 transition-transform duration-500 group-hover:scale-105">Samruddhi</span>
           </div>
 
           <div className="hidden lg:flex items-center gap-8 xl:gap-12">
@@ -4812,7 +4844,7 @@ const AskGeoApp = () => {
                 <button 
                   key={item} 
                   onClick={() => { setCurrentPage(pageKey); window.scrollTo(0,0); }} 
-                  className={`text-[10px] xl:text-xs font-bold tracking-widest transition-colors relative py-2 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-emerald-500 after:transition-all after:duration-300 ${isActive ? 'text-zinc-900 after:w-full' : 'text-zinc-500 hover:text-zinc-900 after:w-0 hover:after:w-full'}`}
+                  className={`text-[10px] xl:text-xs font-bold tracking-widest transition-colors relative py-2 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-blue-500 after:transition-all after:duration-300 ${isActive ? 'text-zinc-900 after:w-full' : 'text-zinc-500 hover:text-zinc-900 after:w-0 hover:after:w-full'}`}
                 >
                   {item}
                 </button>
@@ -4821,7 +4853,7 @@ const AskGeoApp = () => {
             
             <button 
               onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} 
-              className={`text-[10px] xl:text-xs font-bold tracking-widest px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${currentPage === 'tools' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'bg-zinc-900 border-zinc-900 text-white hover:bg-emerald-600 hover:border-emerald-600 shadow-lg'}`}
+              className={`text-[10px] xl:text-xs font-bold tracking-widest px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${currentPage === 'tools' ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' : 'bg-zinc-900 border-zinc-900 text-white hover:bg-blue-600 hover:border-blue-600 shadow-lg'}`}
             >
               <Sparkles className="w-4 h-4" /> EXPLORE TOOLS
             </button>
@@ -4841,7 +4873,7 @@ const AskGeoApp = () => {
               <button 
                 key={item} 
                 onClick={() => { setCurrentPage(pageKey); setMobileMenuOpen(false); window.scrollTo(0,0); }} 
-                className={`text-sm font-bold tracking-widest text-left flex items-center gap-3 p-2 rounded-lg ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-zinc-600 hover:bg-zinc-50'}`}
+                className={`text-sm font-bold tracking-widest text-left flex items-center gap-3 p-2 rounded-lg ${isActive ? 'bg-blue-50 text-blue-700' : 'text-zinc-600 hover:bg-zinc-50'}`}
               >
                 {item}
               </button>
@@ -4850,7 +4882,7 @@ const AskGeoApp = () => {
           <div className="h-px bg-zinc-100 w-full"></div>
           <button 
             onClick={() => { setCurrentPage('tools'); setMobileMenuOpen(false); window.scrollTo(0,0); }} 
-            className="mt-2 bg-zinc-900 text-white text-sm font-bold tracking-widest py-4 rounded-xl flex items-center justify-center gap-2 active:bg-emerald-600 transition-colors shadow-lg"
+            className="mt-2 bg-zinc-900 text-white text-sm font-bold tracking-widest py-4 rounded-xl flex items-center justify-center gap-2 active:bg-blue-600 transition-colors shadow-lg"
           >
             <Sparkles className="w-5 h-5" /> EXPLORE TOOLS
           </button>
@@ -4881,7 +4913,7 @@ const AskGeoApp = () => {
             {/* Brand Column */}
             <div className="lg:col-span-5 xl:col-span-6">
               <div className="flex items-center gap-3 group cursor-pointer mb-8 w-fit" onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); }}>
-                <img src="https://static.wixstatic.com/media/548938_8a6929f000414ad19da4274d179ec4d1~mv2.png" alt="Ask Geo" className="h-10 sm:h-12 w-auto object-contain transition-transform duration-500 group-hover:scale-105" />
+                <span className="text-xl sm:text-2xl font-bold tracking-tight text-white transition-transform duration-500 group-hover:scale-105">Samruddhi</span>
               </div>
               <p className="text-sm sm:text-base font-light leading-relaxed max-w-sm text-zinc-400">
                 A premier financial advisory firm dedicated to building, managing, and preserving wealth through highly customized, data-driven strategies and optimized planning.
@@ -4892,10 +4924,10 @@ const AskGeoApp = () => {
             <div className="lg:col-span-3 lg:col-start-7">
               <h4 className="text-white font-medium mb-8 text-base">Quick Links</h4>
               <ul className="space-y-5 text-sm sm:text-base font-light text-zinc-400 flex flex-col items-start">
-                <li><button onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">Home</button></li>
-                <li><button onClick={() => { setCurrentPage('about'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">About Geo</button></li>
-                <li><a href="https://ewa.njindiaonline.com/ewa/login" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors text-left block">eWealth Login</a></li>
-                <li><a href="https://cdesk.njwealth.in/cdesk/login" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors text-left block">ClientDesk Login</a></li>
+                <li><button onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); }} className="hover:text-blue-400 transition-colors text-left">Home</button></li>
+                <li><button onClick={() => { setCurrentPage('about'); window.scrollTo(0,0); }} className="hover:text-blue-400 transition-colors text-left">About Samruddhi</button></li>
+                <li><a href="https://ewa.njindiaonline.com/ewa/login" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors text-left block">eWealth Login</a></li>
+                <li><a href="https://cdesk.njwealth.in/cdesk/login" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors text-left block">ClientDesk Login</a></li>
               </ul>
             </div>
 
@@ -4903,19 +4935,19 @@ const AskGeoApp = () => {
             <div className="lg:col-span-3">
               <h4 className="text-white font-medium mb-8 text-base">Legal</h4>
               <ul className="space-y-5 text-sm sm:text-base font-light text-zinc-400 flex flex-col items-start">
-                <li><button onClick={() => { setCurrentPage('legal-privacy'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">Privacy Policy</button></li>
-                <li><button onClick={() => { setCurrentPage('legal-terms'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">Terms of Service</button></li>
-                <li><button onClick={() => { setCurrentPage('legal-disclosure'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">Disclosure</button></li>
-                <li><button onClick={() => { setCurrentPage('legal-regulatory'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">Regulatory Information</button></li>
+                <li><button onClick={() => { setCurrentPage('legal-privacy'); window.scrollTo(0,0); }} className="hover:text-blue-400 transition-colors text-left">Privacy Policy</button></li>
+                <li><button onClick={() => { setCurrentPage('legal-terms'); window.scrollTo(0,0); }} className="hover:text-blue-400 transition-colors text-left">Terms of Service</button></li>
+                <li><button onClick={() => { setCurrentPage('legal-disclosure'); window.scrollTo(0,0); }} className="hover:text-blue-400 transition-colors text-left">Disclosure</button></li>
+                <li><button onClick={() => { setCurrentPage('legal-regulatory'); window.scrollTo(0,0); }} className="hover:text-blue-400 transition-colors text-left">Regulatory Information</button></li>
               </ul>
             </div>
           </div>
 
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-xs sm:text-sm font-light text-zinc-500">
-            <p>© {new Date().getFullYear()} Ask Geo Financial Services. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Samruddhi Investments. All rights reserved.</p>
             <div className="flex gap-6">
               <p className="flex items-center gap-2"><MapPin className="w-4 h-4" /> Pune, Maharashtra</p>
-              <p className="flex items-center gap-2"><Phone className="w-4 h-4" /> +91 99606 24271</p>
+              <p className="flex items-center gap-2"><Phone className="w-4 h-4" /> +91 98765 43210</p>
             </div>
           </div>
         </div>
@@ -4927,4 +4959,4 @@ const AskGeoApp = () => {
   );
 };
 
-export default AskGeoApp;
+export default App;
