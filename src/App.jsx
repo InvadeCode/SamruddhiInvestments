@@ -5177,11 +5177,31 @@ const App = () => {
 
             {/* Quick Links Column */}
             <div className="lg:col-span-3 lg:col-start-7">
-              <h4 className="text-white font-medium mb-8 text-base">Quick Links</h4>
-              <ul className="space-y-5 text-sm sm:text-base font-light text-zinc-400 flex flex-col items-start">
-                <li><button onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); }} className="hover:text-blue-400 transition-colors text-left">Home</button></li>
-                <li><button onClick={() => { setCurrentPage('about'); window.scrollTo(0,0); }} className="hover:text-blue-400 transition-colors text-left">About Samruddhi</button></li>
-                </ul>
+              <h4 className="text-white font-medium mb-6 text-base">Quick Links</h4>
+              <ul className="grid grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-x-8 gap-y-4 text-sm sm:text-base font-light text-zinc-400">
+                {[
+                  { label: 'Home', page: 'home' },
+                  { label: 'About Samruddhi', page: 'about' },
+                  { label: 'Services', page: 'services' },
+                  { label: 'Insights', page: 'insights' },
+                  { label: 'Contact', page: 'contact' },
+                  { label: 'Explore Tools', page: 'tools' },
+                ].map((link) => (
+                  <li key={link.page} className="min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCurrentPage(link.page);
+                        setMobileMenuOpen(false);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="block w-full text-left leading-snug hover:text-blue-400 transition-colors"
+                    >
+                      {link.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
 
             {/* Legal Column */}
