@@ -3515,6 +3515,13 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
   const [heroSip, setHeroSip] = useState(25000);
   const [heroYears, setHeroYears] = useState(15);
   const heroFutureValue = heroSip * (((Math.pow(1 + (12/12/100), heroYears * 12) - 1) / (12/12/100)));
+  const [emailSubscribed, setEmailSubscribed] = useState(false);
+
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    setEmailSubscribed(true);
+    setTimeout(() => setEmailSubscribed(false), 4000);
+  }
 
   const testimonials = [
     {
@@ -3617,20 +3624,11 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
                     <p className="text-5xl sm:text-6xl font-light text-white tracking-tight">
                       {formatCurrency(heroFutureValue)}
                     </p>
-                    <div className="mt-4 flex gap-2">
+                    <div className="mt-4 flex gap-2 flex-wrap">
                        <span className="inline-block px-3 py-1 bg-zinc-800 text-zinc-300 text-xs rounded-lg">Principal: {formatCurrency(heroSip * heroYears * 12)}</span>
                        <span className="inline-block px-3 py-1 bg-blue-900/30 text-blue-300 text-xs rounded-lg border border-blue-800/50">Wealth Gain: {formatCurrency(heroFutureValue - (heroSip * heroYears * 12))}</span>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Floating aesthetic elements */}
-              <div className="absolute -left-6 -bottom-6 bg-white border border-zinc-200 p-4 rounded-2xl shadow-xl animate-float hidden sm:flex items-center gap-3">
-                <ShieldCheck className="w-8 h-8 text-blue-600" />
-                <div>
-                  <p className="text-zinc-900 font-bold text-sm">SEBI Registered</p>
-                  <p className="text-zinc-500 text-xs">Fiduciary Standard</p>
                 </div>
               </div>
             </FadeIn>
@@ -3691,8 +3689,34 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
         </div>
       </section>
 
-      {/* --- NEW: The Samruddhi Edge (Comparison) --- */}
+      {/* --- NEW SECTION 1: Core Investment Philosophy --- */}
       <section className="py-24 sm:py-32 bg-white px-6 sm:px-10 lg:px-16 xl:px-24 border-b border-zinc-200">
+        <div className="max-w-[1800px] mx-auto">
+          <FadeIn direction="up" className="mb-16 text-center max-w-3xl mx-auto">
+            <h2 className="text-4xl sm:text-5xl font-light tracking-tighter text-zinc-900 mb-6">Built on unwavering principles.</h2>
+            <p className="text-zinc-500 text-lg font-light leading-relaxed">We don't chase fads or time the market. Our strategies are rooted in decades of economic data, designed to weather storms and capture long-term compounding.</p>
+          </FadeIn>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { icon: ShieldCheck, title: "Capital Protection First", desc: "Before seeking aggressive alpha, we ensure your downside is protected through rigorous asset allocation and risk modeling." },
+              { icon: TrendingUp, title: "Inflation-Beating Growth", desc: "Cash loses value every day. We build portfolios designed to consistently outpace inflation, ensuring your real purchasing power grows." },
+              { icon: BookOpen, title: "Tax-Optimized Compounding", desc: "It's not about what you make, it's about what you keep. Our deployment strategies actively minimize tax drag on your returns." }
+            ].map((pillar, i) => (
+              <FadeIn key={i} delay={i * 150} direction="up" className="p-8 sm:p-10 rounded-[2.5rem] bg-zinc-50 border border-zinc-100 hover:border-blue-200 hover:bg-blue-50/30 hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-500">
+                <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-zinc-200 flex items-center justify-center mb-6">
+                  <pillar.icon className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="text-2xl font-medium text-zinc-900 mb-4">{pillar.title}</h3>
+                <p className="text-zinc-600 font-light leading-relaxed">{pillar.desc}</p>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* --- The Samruddhi Edge (Comparison) --- */}
+      <section className="py-24 sm:py-32 bg-zinc-50 px-6 sm:px-10 lg:px-16 xl:px-24 border-b border-zinc-200">
         <div className="max-w-[1400px] mx-auto">
           <FadeIn direction="up" className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-light tracking-tighter text-zinc-900 mb-6">The Industry Standard vs. <span className="font-medium text-blue-600">The Samruddhi Standard</span></h2>
@@ -3701,7 +3725,7 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
 
           <div className="grid md:grid-cols-2 gap-8 lg:gap-0 lg:rounded-[3rem] overflow-hidden lg:border lg:border-zinc-200 lg:shadow-2xl lg:shadow-zinc-200/50">
             {/* Traditional Side */}
-            <FadeIn direction="right" delay={100} className="bg-zinc-50 p-10 lg:p-16 border border-zinc-200 lg:border-none rounded-[2rem] lg:rounded-none">
+            <FadeIn direction="right" delay={100} className="bg-white p-10 lg:p-16 border border-zinc-200 lg:border-none rounded-[2rem] lg:rounded-none">
               <div className="flex items-center gap-3 mb-10 opacity-60">
                 <X className="w-6 h-6 text-zinc-500" />
                 <h3 className="text-2xl font-medium text-zinc-500">Traditional Advisory</h3>
@@ -3755,7 +3779,39 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
         </div>
       </section>
 
-      {/* --- NEW: Methodology Steps --- */}
+      {/* --- NEW SECTION 2: Who We Serve --- */}
+      <section className="py-24 sm:py-32 bg-white px-6 sm:px-10 lg:px-16 xl:px-24 border-b border-zinc-200 overflow-hidden">
+        <div className="max-w-[1800px] mx-auto">
+          <div className="flex flex-col lg:flex-row gap-16 lg:gap-24 items-center">
+            <FadeIn direction="left" className="lg:w-1/3">
+              <h2 className="text-4xl sm:text-5xl font-light tracking-tighter text-zinc-900 mb-6">Engineered for those who value <span className="font-medium text-blue-600">time and precision.</span></h2>
+              <p className="text-zinc-500 text-lg font-light leading-relaxed mb-8">
+                Our clients are experts in their own fields. They delegate their wealth creation to us because they demand the same level of rigor and professionalism that they apply to their own careers.
+              </p>
+              <BrandButton variant="light" onClick={() => openContactModal('Join Samruddhi')} icon={ArrowRight}>
+                Join Our Client Roster
+              </BrandButton>
+            </FadeIn>
+            
+            <div className="lg:w-2/3 grid sm:grid-cols-2 gap-6 w-full">
+              {[
+                { icon: Activity, title: "Medical Professionals", desc: "Doctors lack the time to monitor markets. We build hands-free, high-growth portfolios tailored to irregular cash flows." },
+                { icon: Bot, title: "Tech Executives", desc: "For IT leaders sitting on stock options or heavy cash reserves, we diversify risk and optimize tax structures." },
+                { icon: Briefcase, title: "Business Owners", desc: "Entrepreneurs need liquidity and capital preservation outside their business. We create parallel wealth streams." },
+                { icon: Map, title: "NRIs & Expats", desc: "Navigating cross-border taxation and compliance is complex. We simplify India-based wealth compounding." }
+              ].map((audience, i) => (
+                <FadeIn key={i} delay={i * 150} direction="up" className="bg-zinc-50 border border-zinc-200 p-8 rounded-[2rem] hover:bg-white hover:shadow-xl transition-all duration-300">
+                  <audience.icon className="w-8 h-8 text-blue-600 mb-6" strokeWidth={1.5} />
+                  <h4 className="text-xl font-medium text-zinc-900 mb-3">{audience.title}</h4>
+                  <p className="text-zinc-500 font-light leading-relaxed">{audience.desc}</p>
+                </FadeIn>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- Methodology Steps --- */}
       <section className="bg-zinc-50 py-24 sm:py-32 px-6 sm:px-10 lg:px-16 xl:px-24 border-b border-zinc-200">
         <div className="max-w-[1800px] mx-auto">
           <FadeIn direction="up" className="mb-20 text-center">
@@ -3780,6 +3836,70 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
                </FadeIn>
              ))}
           </div>
+        </div>
+      </section>
+
+      {/* --- NEW SECTION 3: Tech Stack / Client Portal --- */}
+      <section className="py-24 sm:py-32 bg-[#09090b] px-6 sm:px-10 lg:px-16 xl:px-24 border-b border-zinc-900 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-600/10 to-transparent rounded-full blur-[80px] pointer-events-none"></div>
+        <div className="max-w-[1800px] mx-auto grid lg:grid-cols-2 gap-16 items-center">
+          <FadeIn direction="right" className="order-2 lg:order-1 relative h-[400px] sm:h-[500px] w-full flex items-center justify-center">
+            {/* CSS-based Dashboard Mockup */}
+            <div className="w-full max-w-[500px] bg-zinc-900/80 backdrop-blur-xl border border-zinc-700/50 rounded-3xl p-6 shadow-2xl shadow-blue-900/30 relative z-10">
+              <div className="flex justify-between items-center mb-8 border-b border-zinc-800 pb-4">
+                <div className="flex gap-2">
+                  <div className="w-3 h-3 rounded-full bg-zinc-700"></div>
+                  <div className="w-3 h-3 rounded-full bg-zinc-700"></div>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-xs font-bold">JD</div>
+              </div>
+              <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-2">Total Net Worth</p>
+              <p className="text-4xl text-white font-light mb-8">₹4,28,50,000 <span className="text-emerald-400 text-sm font-medium ml-2">+14.2%</span></p>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center bg-zinc-800/50 p-4 rounded-xl border border-zinc-700/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <span className="text-zinc-300 text-sm">Domestic Equity</span>
+                  </div>
+                  <span className="text-white font-medium text-sm">₹2.1 Cr</span>
+                </div>
+                <div className="flex justify-between items-center bg-zinc-800/50 p-4 rounded-xl border border-zinc-700/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                    <span className="text-zinc-300 text-sm">Fixed Income</span>
+                  </div>
+                  <span className="text-white font-medium text-sm">₹1.5 Cr</span>
+                </div>
+                <div className="flex justify-between items-center bg-zinc-800/50 p-4 rounded-xl border border-zinc-700/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-sky-500"></div>
+                    <span className="text-zinc-300 text-sm">Global Equity</span>
+                  </div>
+                  <span className="text-white font-medium text-sm">₹68 L</span>
+                </div>
+              </div>
+            </div>
+            {/* Background glowing card */}
+            <div className="absolute top-10 left-10 w-full max-w-[500px] h-[80%] bg-blue-900/20 border border-blue-500/10 rounded-3xl -z-10 rotate-6 transform-gpu blur-sm"></div>
+          </FadeIn>
+          
+          <FadeIn direction="left" className="order-1 lg:order-2">
+            <h2 className="text-4xl sm:text-5xl font-light tracking-tighter text-white mb-6">Your entire financial life. <span className="font-medium text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">In your pocket.</span></h2>
+            <p className="text-zinc-400 text-lg font-light leading-relaxed mb-8">
+              We leverage state-of-the-art fintech infrastructure to provide you with a unified, live view of your net worth. No more spread-sheets. No more fragmented banking apps.
+            </p>
+            <ul className="space-y-4 mb-10">
+              {[
+                "Live XIRR and absolute return tracking.",
+                "Automated capital gains tax harvesting reports.",
+                "Family-level consolidated portfolio views.",
+                "Direct, secure communication with your advisor."
+              ].map((item, i) => (
+                <li key={i} className="flex items-center gap-4 text-zinc-300 font-light text-base"><Check className="w-5 h-5 text-blue-500 shrink-0" /> {item}</li>
+              ))}
+            </ul>
+          </FadeIn>
         </div>
       </section>
 
@@ -3813,55 +3933,110 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
         </div>
       </section>
 
+      {/* --- NEW SECTION 4: The Cost of Delay (Compounding Visual) --- */}
+      <section className="py-24 sm:py-32 bg-blue-900 px-6 sm:px-10 lg:px-16 xl:px-24 border-t border-blue-800 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wNSkiLz48L3N2Zz4=')]"></div>
+        <div className="max-w-[1800px] mx-auto relative z-10 grid lg:grid-cols-2 gap-16 items-center">
+          <FadeIn direction="right">
+            <h2 className="text-4xl sm:text-5xl font-light tracking-tighter mb-6 leading-tight">
+              The greatest risk to your wealth is <span className="font-medium text-blue-300">waiting.</span>
+            </h2>
+            <p className="text-blue-100/80 text-lg font-light leading-relaxed mb-8">
+              Time in the market is vastly more powerful than timing the market. Let's look at the mathematical cost of delaying a ₹25,000 monthly SIP by just 5 years (Assuming 12% p.a. to age 60).
+            </p>
+            <BrandButton variant="light" onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} icon={Calculator}>
+              Run Your Own Numbers
+            </BrandButton>
+          </FadeIn>
+          
+          <FadeIn direction="left" className="bg-zinc-900/80 backdrop-blur-md p-8 sm:p-10 rounded-[2.5rem] border border-white/10 shadow-2xl">
+            <div className="space-y-8">
+              {/* Start at 30 */}
+              <div>
+                <div className="flex justify-between items-end mb-3">
+                  <div>
+                    <h4 className="font-medium text-white text-lg">Starting at Age 30</h4>
+                    <p className="text-zinc-400 text-xs">Total Invested: ₹90 Lakhs</p>
+                  </div>
+                  <p className="text-2xl font-light text-blue-400">₹8.8 Cr</p>
+                </div>
+                <div className="w-full h-4 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 rounded-full w-full"></div>
+                </div>
+              </div>
+              
+              {/* Start at 35 */}
+              <div>
+                <div className="flex justify-between items-end mb-3">
+                  <div>
+                    <h4 className="font-medium text-white text-lg">Starting at Age 35</h4>
+                    <p className="text-zinc-400 text-xs">Total Invested: ₹75 Lakhs</p>
+                  </div>
+                  <p className="text-2xl font-light text-zinc-300">₹4.7 Cr</p>
+                </div>
+                <div className="w-full h-4 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-zinc-500 rounded-full w-[53%]"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-8 pt-8 border-t border-zinc-800">
+              <p className="text-sm text-zinc-400 font-light italic">
+                *Delaying by 5 years costs you <strong className="text-white">₹4.1 Crores</strong> in lost compounding, despite saving only ₹15 Lakhs in principal.
+              </p>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* --- Interactive Tools Teaser --- */}
-      <section className="py-24 sm:py-32 lg:py-40 bg-blue-900 text-white px-6 sm:px-10 lg:px-16 xl:px-24 relative overflow-hidden text-left border-y border-blue-950">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wNSkiLz48L3N2Zz4=')] opacity-30"></div>
+      <section className="py-24 sm:py-32 lg:py-40 bg-zinc-50 text-zinc-900 px-6 sm:px-10 lg:px-16 xl:px-24 relative overflow-hidden text-left border-y border-zinc-200">
         <div className="w-full max-w-[1800px] mx-auto flex flex-col lg:flex-row items-center gap-16 lg:gap-24 relative z-10">
           <div className="w-full lg:w-1/2">
             <FadeIn direction="left" className="max-w-xl">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-blue-200 text-[10px] sm:text-xs font-bold tracking-widest mb-8 backdrop-blur-sm">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100/50 border border-blue-200/50 text-blue-700 text-[10px] sm:text-xs font-bold tracking-widest mb-8 shadow-sm">
                 <Calculator className="w-4 h-4" strokeWidth={2} /> 12+ INTERACTIVE TOOLS
               </div>
               <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tighter mb-6 leading-[1.1]">
-                Visualize your <br/><span className="font-medium text-blue-400">financial trajectory.</span>
+                Visualize your <br/><span className="font-medium text-blue-600">financial trajectory.</span>
               </h2>
-              <p className="text-blue-100/70 text-base sm:text-lg lg:text-xl font-light leading-relaxed mb-10">
+              <p className="text-zinc-600 text-base sm:text-lg lg:text-xl font-light leading-relaxed mb-10">
                 Don't guess your future. Use our advanced calculators to map out STP, Lumpsum, Step-Up SIPs, Zero-Cost EMIs, and your exact path to F.I.R.E.
               </p>
-              <BrandButton variant="light" onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} icon={ArrowRight}>
+              <BrandButton onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} icon={ArrowRight}>
                 Explore Calculators
               </BrandButton>
             </FadeIn>
           </div>
           <div className="w-full lg:w-1/2 relative">
-            <div className="absolute inset-0 bg-blue-500/20 blur-[100px] rounded-full z-0 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-blue-500/10 blur-[100px] rounded-full z-0 pointer-events-none"></div>
             <FadeIn delay={300} direction="zoom" className="relative z-10">
-              <div className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 p-8 sm:p-10 lg:p-12 rounded-[2.5rem] shadow-2xl">
-                <div className="flex justify-between items-center mb-8 border-b border-zinc-800 pb-6">
+              <div className="bg-white/90 backdrop-blur-md border border-white/50 p-8 sm:p-10 lg:p-12 rounded-[2.5rem] shadow-2xl shadow-blue-900/10 ring-1 ring-zinc-200 hover:ring-blue-500/30 transition-all duration-700">
+                <div className="flex justify-between items-center mb-8 border-b border-zinc-100 pb-6">
                   <div>
-                    <h4 className="text-xl sm:text-2xl font-medium text-white mb-2">Goal Mapping Engine</h4>
-                    <p className="text-[10px] sm:text-xs font-bold text-blue-400 uppercase tracking-widest">Required SIP Analysis</p>
+                    <h4 className="text-xl sm:text-2xl font-medium text-zinc-900 mb-2">Goal Mapping Engine</h4>
+                    <p className="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest">Required SIP Analysis</p>
                   </div>
-                  <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                    <Target className="w-6 h-6 text-blue-400" strokeWidth={2} />
+                  <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <Target className="w-6 h-6 text-blue-600" strokeWidth={2} />
                   </div>
                 </div>
                 <div className="space-y-8">
                   <div>
-                    <div className="flex justify-between text-sm sm:text-base mb-3"><span className="text-zinc-400 font-light">Target Corpus Needed</span><span className="text-white font-medium">₹1,00,00,000</span></div>
-                    <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="flex justify-between text-sm sm:text-base mb-3"><span className="text-zinc-500 font-light">Target Corpus Needed</span><span className="text-zinc-900 font-medium">₹1,00,00,000</span></div>
+                    <div className="w-full h-2.5 bg-zinc-100 rounded-full overflow-hidden shadow-inner">
                       <div className="h-full bg-blue-500 rounded-full w-[80%] relative"><div className="absolute inset-0 bg-white/20 animate-pulse"></div></div>
                     </div>
                   </div>
                   <div>
-                    <div className="flex justify-between text-sm sm:text-base mb-3"><span className="text-zinc-400 font-light">Time to Retire</span><span className="text-white font-medium">10 Years</span></div>
-                    <div className="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="flex justify-between text-sm sm:text-base mb-3"><span className="text-zinc-500 font-light">Time to Retire</span><span className="text-zinc-900 font-medium">10 Years</span></div>
+                    <div className="w-full h-2.5 bg-zinc-100 rounded-full overflow-hidden shadow-inner">
                       <div className="h-full bg-blue-400 rounded-full w-[40%] relative"><div className="absolute inset-0 bg-white/20 animate-pulse"></div></div>
                     </div>
                   </div>
-                  <div className="pt-8 mt-8 border-t border-zinc-800">
-                    <p className="text-zinc-500 font-bold tracking-widest text-[10px] sm:text-xs mb-3 uppercase">Required Monthly SIP</p>
-                    <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white">
+                  <div className="pt-8 mt-8 border-t border-zinc-100">
+                    <p className="text-zinc-400 font-bold tracking-widest text-[10px] sm:text-xs mb-3 uppercase">Required Monthly SIP</p>
+                    <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-zinc-900">
                       ₹43,041
                     </p>
                   </div>
@@ -3872,7 +4047,32 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
         </div>
       </section>
 
-      {/* --- NEW: Insights Preview Section --- */}
+      {/* --- NEW SECTION 5: Asset Ecosystem --- */}
+      <section className="py-24 sm:py-32 bg-white px-6 sm:px-10 lg:px-16 xl:px-24 border-b border-zinc-200">
+        <div className="max-w-[1800px] mx-auto text-center">
+          <FadeIn direction="up" className="mb-16 max-w-3xl mx-auto">
+            <h2 className="text-4xl sm:text-5xl font-light tracking-tighter text-zinc-900 mb-6">A complete asset ecosystem.</h2>
+            <p className="text-zinc-500 text-lg font-light leading-relaxed">True diversification goes beyond buying different mutual funds. We allocate capital across un-correlated asset classes to build resilient portfolios.</p>
+          </FadeIn>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
+            {[
+              { label: "Domestic & Global Equity", desc: "Long-term Alpha" },
+              { label: "High-Grade Debt & Bonds", desc: "Capital Stability" },
+              { label: "Precious Metals", desc: "Inflation Hedge" },
+              { label: "Alternative & REITs", desc: "Yield Generation" }
+            ].map((asset, i) => (
+              <FadeIn key={i} delay={i * 100} direction="up" className="bg-zinc-50 p-6 sm:p-8 rounded-[2rem] border border-zinc-100 flex flex-col items-center text-center">
+                <div className="w-3 h-3 rounded-full bg-blue-500 mb-6"></div>
+                <h4 className="text-lg font-medium text-zinc-900 mb-2">{asset.label}</h4>
+                <p className="text-zinc-500 text-xs sm:text-sm font-light uppercase tracking-widest">{asset.desc}</p>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* --- Insights Preview Section --- */}
       <section className="py-24 sm:py-32 bg-zinc-50 px-6 sm:px-10 lg:px-16 xl:px-24 border-b border-zinc-200">
         <div className="max-w-[1800px] mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
@@ -3888,7 +4088,6 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Hardcoded preview of top 3 insights for the home page layout */}
             {[
               { title: "The Impact of Global Rates on Indian Equities", cat: "Macroeconomics", date: "April 2026" },
               { title: "Debt Market Opportunities in a Shifting Cycle", cat: "Debt Strategy", date: "March 2026" },
@@ -3911,8 +4110,40 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
         </div>
       </section>
 
+      {/* --- NEW SECTION 6: FAQs --- */}
+      <section className="py-24 sm:py-32 bg-white px-6 sm:px-10 lg:px-16 xl:px-24 border-b border-zinc-200">
+        <div className="max-w-[1000px] mx-auto">
+          <FadeIn direction="up" className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-light tracking-tighter text-zinc-900 mb-6">Frequently Asked Questions</h2>
+          </FadeIn>
+          
+          <div className="space-y-4">
+            {[
+              { q: "What is your minimum investment requirement?", a: "We believe in democratizing wealth management. While our Portfolio Management Services (PMS) require a regulatory minimum, our Mutual Fund advisory services are accessible to dedicated retail investors who are committed to a long-term SIP discipline." },
+              { q: "How are you different from a bank relationship manager?", a: "Unlike bank relationship managers who often operate with sales targets for specific internal products, Samruddhi operates on a fiduciary standard. We survey the entire market and select products solely based on their merit and alignment with your goals." },
+              { q: "Are there any hidden charges or exit loads?", a: "We practice radical transparency. All mutual fund exit loads, expense ratios, and any advisory fees are explicitly disclosed before any investment is made. There are zero hidden charges from our end." },
+              { q: "Do I have access to my money in an emergency?", a: "Yes. Liquidity is a core pillar of our architecture. While we earmark funds for long-term growth, we ensure you have dedicated emergency liquid buckets that can be accessed within 24-48 hours." }
+            ].map((faq, i) => (
+              <FadeIn key={i} delay={i * 100} direction="up">
+                <details className="group bg-zinc-50 border border-zinc-200 rounded-[1.5rem] [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="flex cursor-pointer items-center justify-between gap-1.5 p-6 font-medium text-zinc-900">
+                    <span className="text-lg">{faq.q}</span>
+                    <span className="shrink-0 rounded-full bg-white p-2 text-zinc-900 shadow-sm transition duration-300 group-open:-rotate-180">
+                      <ChevronDown className="w-5 h-5" />
+                    </span>
+                  </summary>
+                  <p className="px-6 pb-6 text-zinc-600 font-light leading-relaxed">
+                    {faq.a}
+                  </p>
+                </details>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* --- Testimonials --- */}
-      <section className="py-24 sm:py-32 lg:py-40 bg-white px-6 sm:px-10 lg:px-16 xl:px-24 text-left border-b border-zinc-200/50">
+      <section className="py-24 sm:py-32 bg-zinc-50 px-6 sm:px-10 lg:px-16 xl:px-24 text-left border-b border-zinc-200/50">
         <div className="w-full max-w-[1800px] mx-auto">
           <FadeIn direction="up" className="mb-16 max-w-3xl">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-[10px] sm:text-xs font-bold tracking-widest mb-6 shadow-sm">
@@ -3926,7 +4157,7 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {testimonials.map((testimonial, idx) => (
               <FadeIn key={idx} delay={idx * 150} direction="zoom">
-                <div className="bg-zinc-50 border border-zinc-200 p-8 sm:p-10 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:bg-white hover:border-blue-200 transition-all duration-500 flex flex-col h-full justify-between group">
+                <div className="bg-white border border-zinc-200 p-8 sm:p-10 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:border-blue-200 transition-all duration-500 flex flex-col h-full justify-between group">
                   <div>
                     <div className="flex gap-1 mb-6">
                       {[...Array(testimonial.rating)].map((_, i) => (
@@ -3937,7 +4168,7 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
                       "{testimonial.quote}"
                     </p>
                   </div>
-                  <div className="pt-6 border-t border-zinc-200">
+                  <div className="pt-6 border-t border-zinc-100">
                     <h4 className="text-lg font-medium text-zinc-900">{testimonial.name}</h4>
                     <p className="text-xs font-bold tracking-widest text-zinc-400 uppercase mt-1">{testimonial.title}</p>
                   </div>
@@ -3945,6 +4176,29 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
               </FadeIn>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* --- NEW SECTION 7: Newsletter Signup --- */}
+      <section className="py-24 sm:py-32 bg-blue-50/50 px-6 sm:px-10 lg:px-16 xl:px-24 border-b border-blue-100">
+        <div className="max-w-[800px] mx-auto text-center">
+          <FadeIn direction="up">
+            <Mail className="w-12 h-12 text-blue-600 mx-auto mb-6" strokeWidth={1.5} />
+            <h2 className="text-3xl sm:text-4xl font-light tracking-tighter text-zinc-900 mb-4">The Samruddhi Dispatch</h2>
+            <p className="text-zinc-500 text-base sm:text-lg font-light mb-10">Join thousands of investors who receive our monthly breakdown of macroeconomic trends, taxation changes, and strategic asset allocation updates.</p>
+            
+            {emailSubscribed ? (
+              <div className="bg-blue-100/50 border border-blue-200 text-blue-700 p-4 rounded-xl inline-flex items-center gap-2 mx-auto animate-in zoom-in duration-300">
+                <Check className="w-5 h-5" /> Successfully Subscribed!
+              </div>
+            ) : (
+              <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
+                <input required type="email" placeholder="Enter your email address" className="flex-1 px-6 py-4 rounded-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-zinc-900 shadow-sm" />
+                <BrandButton type="submit" className="whitespace-nowrap">Subscribe</BrandButton>
+              </form>
+            )}
+            <p className="text-xs text-zinc-400 mt-4">We respect your inbox. No spam, ever.</p>
+          </FadeIn>
         </div>
       </section>
 
@@ -3974,6 +4228,7 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
     </>
   );
 };
+
 
 // --- ABOUT PAGE COMPONENT ---
 const AboutPage = ({ setCurrentPage, openContactModal }) => {
@@ -4942,7 +5197,11 @@ const App = () => {
           </div>
 
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-xs sm:text-sm font-light text-zinc-500">
-            <p>© {new Date().getFullYear()} Samruddhi Investments. All rights reserved.</p>
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6">
+              <p>© {new Date().getFullYear()} Samruddhi Investments. All rights reserved.</p>
+              <p className="hidden sm:block text-zinc-800">|</p>
+              <p>Powered by <a href="https://www.scram-rs.com" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-blue-400 transition-colors font-medium">ScramRS</a></p>
+            </div>
             <div className="flex gap-6">
               <p className="flex items-center gap-2"><MapPin className="w-4 h-4" /> Pune, Maharashtra</p>
               <p className="flex items-center gap-2"><Phone className="w-4 h-4" /> +91 98765 43210</p>
