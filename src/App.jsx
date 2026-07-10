@@ -4926,9 +4926,7 @@ const App = () => {
               <ul className="space-y-5 text-sm sm:text-base font-light text-zinc-400 flex flex-col items-start">
                 <li><button onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); }} className="hover:text-blue-400 transition-colors text-left">Home</button></li>
                 <li><button onClick={() => { setCurrentPage('about'); window.scrollTo(0,0); }} className="hover:text-blue-400 transition-colors text-left">About Samruddhi</button></li>
-                <li><a href="https://ewa.njindiaonline.com/ewa/login" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors text-left block">eWealth Login</a></li>
-                <li><a href="https://cdesk.njwealth.in/cdesk/login" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors text-left block">ClientDesk Login</a></li>
-              </ul>
+                </ul>
             </div>
 
             {/* Legal Column */}
